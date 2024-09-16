@@ -5,7 +5,7 @@ target/
 !**/src/test/**/target/
 
 ### STS ###
-.apt_generated
+.apt_generated 
 .classpath
 .factorypath
 .project
@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+application.properties
+application.yml
