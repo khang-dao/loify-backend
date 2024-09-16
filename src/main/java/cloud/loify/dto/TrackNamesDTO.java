@@ -1,4 +1,4 @@
-package com.example.demo.dto;
+package cloud.loify.dto;
 
 import java.util.List;
 

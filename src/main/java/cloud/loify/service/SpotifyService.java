@@ -1,6 +1,6 @@
-package com.example.demo.service;
+package cloud.loify.service;
 
-import com.example.demo.dto.*;
+import cloud.loify.dto.*;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
