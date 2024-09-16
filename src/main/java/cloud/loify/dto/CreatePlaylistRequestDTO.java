@@ -1,4 +1,4 @@
-package com.example.demo.dto;
+package cloud.loify.dto;
 
 public record CreatePlaylistRequestDTO(String name, String description, boolean isPublic, boolean collaborative) {
 

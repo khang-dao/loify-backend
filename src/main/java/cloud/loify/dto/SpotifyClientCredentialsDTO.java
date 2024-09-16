@@ -1,4 +1,4 @@
-package com.example.demo.dto;
+package cloud.loify.dto;
 
 // Convert to Builder Pattern later?
 public record SpotifyClientCredentialsDTO(String grant_type, String client_id, String client_secret, String redirectUri, String authCode) {

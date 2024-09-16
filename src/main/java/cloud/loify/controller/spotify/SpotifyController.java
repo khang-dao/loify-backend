@@ -1,9 +1,9 @@
-package com.example.demo.controller.spotify;
+package cloud.loify.controller.spotify;
 
-import com.example.demo.dto.AddTracksRequestDTO;
-import com.example.demo.dto.CreatePlaylistRequestDTO;
-import com.example.demo.dto.TrackNamesDTO;
-import com.example.demo.service.SpotifyService;
+import cloud.loify.dto.AddTracksRequestDTO;
+import cloud.loify.dto.CreatePlaylistRequestDTO;
+import cloud.loify.dto.TrackNamesDTO;
+import cloud.loify.service.SpotifyService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
