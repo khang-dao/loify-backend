@@ -1,4 +1,4 @@
-package com.example.demo.config;
+package cloud.loify.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,6 +27,11 @@ public class SecurityConfig {
                     auth.requestMatchers("/").permitAll(); // Allow root access without authentication
                     auth.requestMatchers("/spotify/login").permitAll();
                     auth.requestMatchers("/api/spotify/users/{username}/playlists").permitAll();
+                    auth.requestMatchers("/api/spotify/playlists/{playlistId}").permitAll();
+                    auth.requestMatchers("/api/spotify/tracks/{trackName}").permitAll();
+                    auth.requestMatchers("/api/spotify/users/{username}/playlists").permitAll();
+                    auth.requestMatchers("/api/spotify/playlists/{playlistId}/tracks").permitAll();
+                    auth.requestMatchers("/api/spotify/tracks/loify").permitAll();
                     auth.anyRequest().authenticated(); // Require authentication for all other requests
                 })
                 .oauth2Login(withDefaults()) // OAuth2 login configuration
