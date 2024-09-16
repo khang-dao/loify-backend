@@ -51,22 +51,8 @@ public class SpotifyController {
 
     @Deprecated
     @GetMapping("/api/spotify/login")
-    public void getAuthCode(@AuthenticationPrincipal OAuth2User principal) {
+    public void handleCallback(@AuthenticationPrincipal OAuth2User principal) {
         spotifyService.updateRequestHeadersWithAuthToken(principal);
-    }
-
-    @Deprecated
-    @GetMapping("/login/oauth2/token/spotify")
-    public String handleCallback(@RequestParam("code") String code) {
-        this.spotifyService.authCode = code;
-        System.out.println("Authorization code received: " + this.spotifyService.authCode);
-        return "call back C:";
-    }
-
-    @Deprecated
-    @PostMapping("/api/spotify/auth/token")
-    public void setAuthToken() {
-        spotifyService.setAuthToken();
     }
 
     @GetMapping("/api/spotify/users/{username}/playlists")
@@ -103,8 +89,4 @@ public class SpotifyController {
     public List<String> getLoifyedTracks(@RequestBody TrackNamesDTO requestBody) {
         return spotifyService.getLoifyedTracks(requestBody);
     }
-
-
-
-
 }

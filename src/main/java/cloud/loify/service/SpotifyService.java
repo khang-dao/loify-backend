@@ -79,61 +79,6 @@ public class SpotifyService {
         System.out.println("refreshToken: " + refreshToken);
     }
 
-
-
-    @Deprecated
-    private void updateWebClientWithToken() {
-        this.webClient = this.webClientBuilder
-            .filter(ExchangeFilterFunction.ofRequestProcessor(request -> {
-                ClientRequest updatedRequest = ClientRequest.from(request)
-                    .header("Authorization", "Bearer " + this.authToken)
-                    .build();
-                return Mono.just(updatedRequest);
-            }))
-            .build();
-        System.out.println("AUTHENTICATED :) happy coding");
-        System.out.println("code: " + this.authCode);
-        System.out.println("token: " + this.authToken);
-    }
-
-    @Deprecated
-    public ModelAndView getAuthCode() {
-        System.out.println("scopes: " + this.scopes);
-
-        String encodedScopes = URLEncoder.encode(scopes, StandardCharsets.UTF_8);
-        String url = String.format(
-                "https://accounts.spotify.com/authorize?response_type=code&client_id=%s&scope=%s&redirect_uri=%s",
-                clientId,
-                encodedScopes,
-                redirectUri
-        );
-
-        System.out.println("Redirect URL: " + url);
-        return new ModelAndView("redirect:" + url);
-    }
-
-    @Deprecated
-    public void setAuthToken() {
-        SpotifyClientCredentialsDTO credentialsDTO = new SpotifyClientCredentialsDTO(
-                "authorization_code",       // grant_type
-                this.clientId,                   // client_id
-                this.clientSecret,               // client_secret
-                this.redirectUri,                // redirectUri
-                this.authCode                    // authCode
-        );
-
-        SpotifyAuthTokenResponseDTO response = this.webClient.post()
-            .uri(TOKEN_URL)
-            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-            .bodyValue(credentialsDTO.toString())
-            .retrieve()
-            .bodyToMono(SpotifyAuthTokenResponseDTO.class)
-            .block();
-
-        this.authToken = response.access_token();
-        this.updateWebClientWithToken();
-    }
-
     public List<String> getAllPlaylistsByUserId(String userId) {
         return this.webClient.get()
                 .uri("/v1/users/" + userId + "/playlists")
@@ -244,8 +189,6 @@ public class SpotifyService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
-
-
 
 
     public void addCustomImageToPlaylist(String userId) {
