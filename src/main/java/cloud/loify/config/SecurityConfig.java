@@ -32,6 +32,10 @@ public class SecurityConfig {
                     auth.requestMatchers("/api/spotify/users/{username}/playlists").permitAll();
                     auth.requestMatchers("/api/spotify/playlists/{playlistId}/tracks").permitAll();
                     auth.requestMatchers("/api/spotify/tracks/loify").permitAll();
+
+                    auth.requestMatchers("/api/spotify/me/playlists").permitAll();
+                    auth.requestMatchers("/api/spotify/tracks/{trackName}").permitAll();
+                    auth.requestMatchers("/api/spotify/playlists/{playlistId}/tracks/loify").permitAll();
                     auth.anyRequest().authenticated(); // Require authentication for all other requests
                 })
                 .oauth2Login(withDefaults()) // OAuth2 login configuration
