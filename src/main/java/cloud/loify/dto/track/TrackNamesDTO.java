@@ -1,4 +1,4 @@
-package cloud.loify.dto;
+package cloud.loify.dto.track;
 
 import java.util.List;
 
