@@ -1,23 +1,19 @@
 package cloud.loify.controller.spotify;
 
-import cloud.loify.dto.AddTracksRequestDTO;
-import cloud.loify.dto.CreatePlaylistRequestDTO;
-import cloud.loify.dto.TrackNamesDTO;
+import cloud.loify.dto.*;
+import cloud.loify.dto.response.TrackSearchResponseDTO;
+import cloud.loify.dto.track.TrackNamesDTO;
+import cloud.loify.dto.track.TracksDTO;
 import cloud.loify.service.SpotifyService;
-import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.reactive.result.view.RedirectView;
-import org.springframework.web.servlet.ModelAndView;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,15 +47,28 @@ public class SpotifyController {
 
     @Deprecated
     @GetMapping("/api/spotify/login")
-    public void handleCallback(@AuthenticationPrincipal OAuth2User principal) {
+    public String handleCallback(@AuthenticationPrincipal OAuth2User principal) {
         spotifyService.updateRequestHeadersWithAuthToken(principal);
+        return "Thank you for logging in - you can close this window now :)";
     }
 
+    @GetMapping("/api/spotify/me/playlists")
+    public Mono<PlaylistDTO> getAllPlaylistsByCurrentUser() {
+        return spotifyService.getAllPlaylistsByCurrentUser();
+    }
+
+    @Deprecated
     @GetMapping("/api/spotify/users/{username}/playlists")
     public void getAllPlaylistsByUserId(@PathVariable String username) {
         System.out.println(spotifyService.getAllPlaylistsByUserId(username));
     }
 
+    @GetMapping("/api/spotify/playlists/{playlistId}/tracks")
+    public Mono<TracksDTO> getAllTracksInPlaylist(@PathVariable String playlistId) {
+        return spotifyService.getAllTracksInPlaylist(playlistId);
+    }
+
+    @Deprecated
     @GetMapping("/api/spotify/playlists/{playlistId}")
     public void getAllTrackNamesInPlaylist(@PathVariable String playlistId) {
         System.out.println(spotifyService.getAllTrackNamesInPlaylist(playlistId));
@@ -71,11 +80,17 @@ public class SpotifyController {
 //    }
 
     @GetMapping("/api/spotify/tracks/{trackName}")
-    public void getFirstTrackIdByTrackName(@PathVariable String trackName) {
-        System.out.println(spotifyService.getFirstTrackIdByTrackName(trackName));
+    public Mono<TrackSearchResponseDTO> getFirstTrackByTrackName(@PathVariable String trackName) {
+        return spotifyService.getFirstTrackByTrackName(trackName);
     }
 
-     @PostMapping("/api/spotify/users/{username}/playlists")
+    @Deprecated
+//    @GetMapping("/api/spotify/tracks/{trackName}")
+//    public void getFirstTrackIdByTrackName(@PathVariable String trackName) {
+//        System.out.println(spotifyService.getFirstTrackIdByTrackName(trackName));
+//    }
+
+    @PostMapping("/api/spotify/users/{username}/playlists")
     public void createPlaylist(@PathVariable String username, @RequestBody CreatePlaylistRequestDTO requestBody) {
         spotifyService.createPlaylist(username, requestBody);
     }
@@ -85,8 +100,16 @@ public class SpotifyController {
         spotifyService.addTracksToPlaylist(playlistId, requestBody);
     }
 
+    @Deprecated
     @PostMapping("/api/spotify/tracks/loify")
     public List<String> getLoifyedTracks(@RequestBody TrackNamesDTO requestBody) {
         return spotifyService.getLoifyedTracks(requestBody);
+    }
+
+    @GetMapping("/api/spotify/playlists/{playlistId}/tracks/loify")
+    public Flux<TrackSearchResponseDTO> getAndLoifyAllTracksInPlaylist(@PathVariable String playlistId) {
+//        public Mono<TracksDTO> getAndLoifyAllTracksInPlaylist(@PathVariable String playlistId) {
+//            return spotifyService.getAndLoifyAllTracksInPlaylist(playlistId);
+        return spotifyService.getAndLoifyAllTracksInPlaylist(playlistId);
     }
 }

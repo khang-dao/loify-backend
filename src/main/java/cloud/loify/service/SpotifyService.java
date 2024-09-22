@@ -1,6 +1,8 @@
 package cloud.loify.service;
 
 import cloud.loify.dto.*;
+import cloud.loify.dto.response.TrackSearchResponseDTO;
+import cloud.loify.dto.track.*;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -14,11 +16,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.ClientRequest;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.servlet.ModelAndView;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -57,8 +57,6 @@ public class SpotifyService {
         this.authorizedClientService = authorizedClientService;
     }
 
-
-
     public void updateRequestHeadersWithAuthToken(@AuthenticationPrincipal OAuth2User principal) {
         OAuth2AuthorizedClient client = authorizedClientService.loadAuthorizedClient("spotify", principal.getName());
         String accessToken = client.getAccessToken().getTokenValue();
@@ -79,6 +77,15 @@ public class SpotifyService {
         System.out.println("refreshToken: " + refreshToken);
     }
 
+    // Swap `PlaylistDTO` with `UserPlaylistResponseDTO`
+    public Mono<PlaylistDTO> getAllPlaylistsByCurrentUser() {
+        return this.webClient.get()
+                .uri("/v1/me/playlists")
+                .retrieve()
+                .bodyToMono(PlaylistDTO.class);
+    }
+
+    @Deprecated
     public List<String> getAllPlaylistsByUserId(String userId) {
         return this.webClient.get()
                 .uri("/v1/users/" + userId + "/playlists")
@@ -97,9 +104,17 @@ public class SpotifyService {
                 .block();
     }
 
-    public List<String>  getAllTrackNamesInPlaylist(String playlistId) {
+    public Mono<TracksDTO> getAllTracksInPlaylist(String playlistId) {
+        return this.webClient.get()
+                .uri("/v1/playlists/" + playlistId + "/tracks")
+                .retrieve()
+                .bodyToMono(TracksDTO.class);
+    }
+
+    @Deprecated
+    public List<String> getAllTrackNamesInPlaylist(String playlistId) {
         JSONArray tracks =  this.webClient.get()
-                .uri("/v1/playlists/" + playlistId)
+                .uri("/v1/playlists/" + playlistId + "/tracks")
                 .retrieve()
                 .bodyToMono(String.class)
                 .map(JSONObject::new)
@@ -127,6 +142,20 @@ public class SpotifyService {
 //    }
 
 
+    public Mono<TrackSearchResponseDTO> getFirstTrackByTrackName(String trackName) {
+        try {
+            return this.webClient.get()
+                    .uri("/v1/search?q=track:" + trackName + "&type=track&limit=1")
+                    .retrieve()
+                    .bodyToMono(TrackSearchResponseDTO.class);
+        }
+        catch (JSONException err) {
+            System.out.println("Song could not be Loify-ed: " + err);
+        }
+        return null;
+    }
+
+    @Deprecated
     public String getFirstTrackIdByTrackName(String trackName) {
         try {
             String trackId = this.webClient.get()
@@ -181,6 +210,7 @@ public class SpotifyService {
         return trackName + " lofi";
     }
 
+    @Deprecated
     public List<String> getLoifyedTracks(TrackNamesDTO requestBody) {
         List<String> trackNames = requestBody.trackNames();
         Stream<String> loifyedTrackNames = trackNames.stream().map(this::loifyTrackName);
@@ -191,7 +221,30 @@ public class SpotifyService {
     }
 
 
-    public void addCustomImageToPlaylist(String userId) {
+    public Flux<TrackSearchResponseDTO> getAndLoifyAllTracksInPlaylist(String playlistId) {
+//    public void getAndLoifyAllTracksInPlaylist(String playlistId) {
+        // STEP 1: Get all `tracks` in playlist --- (maybe just call `getAllTracksInPlaylist()`)
+        TracksDTO tracks = this.getAllTracksInPlaylist(playlistId).block();
+
+        // STEP 2: Extract all `tracksNames` in playlist
+        Stream<String> trackNames = tracks.items()
+                .stream()
+                .map((t) -> (TrackItemDTO) t)
+                .map((t) -> t.track().name());
+
+        // STEP 3: "loify" all `trackNames` - `loifyedTrackNames = trackNames.map(this::loifyTrackName)`
+        Stream<String> loifyedTrackNames = trackNames.map(this::loifyTrackName);
+
+        // STEP 3: Get all "loify-ed" tracks (by using FIRST_TRACK algo) - `loifedTracks = loifyedTrackNames.map(this::getFirstTrackByTrackName)`
+        Flux<TrackSearchResponseDTO> loifyedTracks = Flux.fromStream(loifyedTrackNames
+                .map(this::getFirstTrackByTrackName))
+                .flatMap(mono -> mono);  // Flatten the Mono<Track> into a Flux<Track>
+
+        // STEP 4: Now we have all Mono<TrackDTO> `loifyedTracks`, simply return - `return loifyedTracks`
+        return loifyedTracks;
 
     }
+
+
+    public void addCustomImageToPlaylist(String userId) {}
 }
