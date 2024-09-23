@@ -92,8 +92,8 @@ public class SpotifyController {
 //    }
 
     @PostMapping("/api/spotify/users/{username}/playlists")
-    public void createPlaylist(@PathVariable String username, @RequestBody CreatePlaylistRequestDTO requestBody) {
-        spotifyService.createPlaylist(username, requestBody);
+    public Mono<CreatePlaylistResponseDTO> createPlaylist(@PathVariable String username, @RequestBody CreatePlaylistRequestDTO requestBody) {
+        return spotifyService.createPlaylist(username, requestBody);
     }
 
     @PostMapping("/api/spotify/playlists/{playlistId}/tracks")

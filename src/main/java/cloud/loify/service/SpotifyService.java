@@ -202,16 +202,16 @@ public class SpotifyService {
 
     }
 
-    public void createPlaylist(String username, CreatePlaylistRequestDTO requestBody) {
-        CreatePlaylistResponseDTO responseBody = this.webClient.post()
+    public Mono<CreatePlaylistResponseDTO> createPlaylist(String username, CreatePlaylistRequestDTO requestBody) {
+        return this.webClient.post()
                 .uri("v1/users/" + username + "/playlists")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(requestBody)
                 .retrieve()
-                .bodyToMono(CreatePlaylistResponseDTO.class)
-                .block();
+                .bodyToMono(CreatePlaylistResponseDTO.class);
+//                .block();
 
-        System.out.println("Playlist Created: " + responseBody);
+//        System.out.println("Playlist Created: " + responseBody);
     }
 
     public void addTracksToPlaylist(String playlistId, AddTracksRequestDTO requestBody) {
@@ -278,12 +278,14 @@ public class SpotifyService {
         // STEP 0: Get current playlist details
 
         // STEP 1: Create new (empty 🍃) playlist
-//        String currentPlaylistName = this.getPlaylist(playlistId).block().name();
-////        String loifyPlaylistName = this.loifyPlaylistName(currentPlaylistName);
-////        String loifyPlaylistDescription = this.loifyPlaylistDescription(currentPlaylistName);
-////
-////        CreatePlaylistRequestDTO createPlaylistReqBody = new CreatePlaylistRequestDTO(loifyPlaylistName, loifyPlaylistDescription, true, true);
-//        this.createPlaylist(this.userProfile.id(), createPlaylistReqBody);
+        String currentPlaylistName = this.getPlaylist(playlistId).block().name();
+        String loifyPlaylistName = this.loifyPlaylistName(currentPlaylistName);
+        String loifyPlaylistDescription = this.loifyPlaylistDescription(currentPlaylistName);
+
+        CreatePlaylistRequestDTO createPlaylistReqBody = new CreatePlaylistRequestDTO(loifyPlaylistName, loifyPlaylistDescription, true, true);
+
+        CreatePlaylistResponseDTO response = this.createPlaylist(this.userProfile.id(), createPlaylistReqBody).block();
+        String loifyPlaylistId = response.id();
 
 
         // STEP 2: Loify all tracks in playlist -> return an array of 🍃tracks -> Flux<TrackSearchResponseDTO>.block()
@@ -316,7 +318,7 @@ public class SpotifyService {
         AddTracksRequestDTO addTracksReqBody = new AddTracksRequestDTO(uris);
 
         System.out.println("HIIIIII: " + addTracksReqBody);
-        this.addTracksToPlaylist("0jrfwoUkUFfjOfEbNnhIgs", addTracksReqBody);       // <- TODO: make the playlist dynamic (must come from above )
+        this.addTracksToPlaylist(loifyPlaylistId, addTracksReqBody);       // <- TODO: make the playlist dynamic (must come from above )
 
 
         // STEP 4: Return the `href` url of the 🍃 playlist - so that users can view in Spotify

@@ -1,4 +1,6 @@
 package cloud.loify.dto;
 
 
-public record CreatePlaylistResponseDTO(String id, String name, String description, boolean isPublic, boolean collaborative) {}
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+public record CreatePlaylistResponseDTO(String id, String name, String description, @JsonProperty("public") boolean isPublic, boolean collaborative) {}
