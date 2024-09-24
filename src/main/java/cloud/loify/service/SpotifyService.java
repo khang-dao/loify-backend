@@ -9,6 +9,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.origin.SystemEnvironmentOrigin;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
@@ -22,10 +23,19 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.awt.*;
+import java.io.IOException;
 import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.net.URL;
+import java.util.Base64;
 
 @Service
 public class SpotifyService {
@@ -230,7 +240,7 @@ public class SpotifyService {
     }
 
     private String loifyPlaylistDescription(String playlistName){
-        return "a loify-ed version of playlist " + playlistName + " 🍃";
+        return "a loify-ed version of playlist: " + playlistName;
     }
 
     private String loifyTrackName(String trackName){
@@ -278,7 +288,8 @@ public class SpotifyService {
     public CreatePlaylistResponseDTO createLoifyedPlaylistAndAddLoifyedTracks(@PathVariable String playlistId) {
         // STEP 0: Get current playlist details
         // STEP 1: Create new (empty 🍃) playlist
-        String currentPlaylistName = this.getPlaylist(playlistId).block().name();
+        PlaylistResponseDTO currentPlaylist = this.getPlaylist(playlistId).block();
+        String currentPlaylistName = currentPlaylist.name();
         String loifyPlaylistName = this.loifyPlaylistName(currentPlaylistName);
         String loifyPlaylistDescription = this.loifyPlaylistDescription(currentPlaylistName);
 
@@ -288,11 +299,26 @@ public class SpotifyService {
         CreatePlaylistResponseDTO response = this.createPlaylist(this.userProfile.id(), createPlaylistReqBody).block();
         String loifyPlaylistId = response.id();
 
-        // STEP 2: Loify all tracks in playlist -> return an array of 🍃tracks -> Flux<TrackSearchResponseDTO>.block()
+        // STEP 2: Update (empty 🍃) playlist - image
+        try {
+            String currentPlaylistImage = currentPlaylist.images().get(0).url();
+            String loifyPlaylistImage = this.loifyPlaylistImage(currentPlaylistImage);
+            this.updatePlaylistImage(loifyPlaylistId, loifyPlaylistImage).block();
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        catch (Exception e) {
+            // TODO: Implement default cover image
+            System.out.println("Original Playlist does not have cover image... fallback to default loify image");
+        }
+
+
+        // STEP 3: Loify all tracks in playlist -> return an array of 🍃tracks -> Flux<TrackSearchResponseDTO>.block()
         List<TrackSearchResponseDTO> loifyedTracks = this.getAndLoifyAllTracksInPlaylist(playlistId).collectList().block();
         System.out.println(loifyedTracks);
 
-        // STEP 3: Add loify-ed tracks -> to (empty 🍃) playlist
+        // STEP 4: Add loify-ed tracks -> to (empty 🍃) playlist
         List<String> uris = loifyedTracks
                 .stream()
                 .map((t) -> {
@@ -319,9 +345,90 @@ public class SpotifyService {
         System.out.println("HIIIIII: " + addTracksReqBody);
         this.addTracksToPlaylist(loifyPlaylistId, addTracksReqBody).block();       // <- TODO: make the playlist dynamic (must come from above )
 
-        // STEP 4: Return the `href` url of the 🍃 playlist - so that users can view in Spotify
+        // STEP 5: Return the `href` url of the 🍃 playlist - so that users can view in Spotify
          return response;
     }
 
-    public void addCustomImageToPlaylist(String userId) {}
+    private String loifyPlaylistImage(String imageUrl) throws IOException {
+        // Download image from the provided URL
+        URL url = new URL(imageUrl);
+        BufferedImage originalImage = ImageIO.read(url);
+
+        // Resize the image if it exceeds the maximum dimension
+        BufferedImage resizedImage = resizeImage(originalImage);
+
+        // Create a new BufferedImage to hold the final image (with emoji overlay)
+        BufferedImage finalImage = new BufferedImage(resizedImage.getWidth(), resizedImage.getHeight(), BufferedImage.TYPE_INT_ARGB);
+
+        // Create a graphics object for the final image
+        Graphics2D g2d = finalImage.createGraphics();
+
+        // Set the composite to draw the original image at 60% opacity
+        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.9f));
+        g2d.drawImage(resizedImage, 0, 0, null);
+
+        // Reset the composite to draw the emoji with full opacity
+        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
+
+        // Set font and get the metrics for the emoji size
+        g2d.setFont(new Font("SansSerif", Font.PLAIN, 100));
+        FontMetrics fontMetrics = g2d.getFontMetrics();
+        String emoji = "🍃";
+
+        // Calculate the position to center the emoji
+        int stringWidth = fontMetrics.stringWidth(emoji);
+        int stringHeight = fontMetrics.getAscent();
+
+        int centerX = (finalImage.getWidth() - stringWidth) / 2;
+        int centerY = ((finalImage.getHeight() - stringHeight) / 2) + stringHeight - 10;
+
+        // Draw the emoji in the center of the image
+        g2d.drawString(emoji, centerX, centerY);
+
+        g2d.dispose(); // Clean up graphics context
+
+        // Convert the final image with the emoji to Base64
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ImageIO.write(finalImage, "png", baos);
+        byte[] finalImageBytes = baos.toByteArray();
+
+        // Encode to Base64
+        String base64Image = Base64.getEncoder().encodeToString(finalImageBytes);
+
+        // Return the Base64 string to the client
+        return base64Image;
+    }
+
+    private BufferedImage resizeImage(BufferedImage originalImage) {
+        int originalWidth = originalImage.getWidth();
+        int originalHeight = originalImage.getHeight();
+
+        // Calculate new dimensions while maintaining aspect ratio
+        int newWidth;
+        int newHeight;
+
+        if (originalWidth > originalHeight) {
+            newWidth = Math.min(originalWidth, 200);
+            newHeight = (int) ((double) originalHeight * newWidth / originalWidth);
+        } else {
+            newHeight = Math.min(originalHeight, 200);
+            newWidth = (int) ((double) originalWidth * newHeight / originalHeight);
+        }
+
+        BufferedImage resizedImage = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = resizedImage.createGraphics();
+        g2d.drawImage(originalImage.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH), 0, 0, null);
+        g2d.dispose();
+
+        return resizedImage;
+    }
+
+    public Mono<String> updatePlaylistImage(String playlistId, String base64Image) {
+            return this.webClient.put()
+                .uri("v1/playlists/" + playlistId + "/images")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(base64Image)
+                .retrieve()
+                .bodyToMono(String.class);
+    }
 }
