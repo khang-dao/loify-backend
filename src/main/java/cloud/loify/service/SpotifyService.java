@@ -272,6 +272,9 @@ public class SpotifyService {
 
     }
 
+    // TODO: Make this atomic - because sometimes the playlist is created, but the songs aren't added
+    // TODO: ^ need to make it so that if one fails, then it's as if the method was never called
+    // TODO: ^ (might involve deleting the playlist if the transaction fails)
     public CreatePlaylistResponseDTO createLoifyedPlaylistAndAddLoifyedTracks(@PathVariable String playlistId) {
         // STEP 0: Get current playlist details
         // STEP 1: Create new (empty 🍃) playlist
