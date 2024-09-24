@@ -49,6 +49,7 @@ public class SpotifyController {
     @GetMapping("/api/spotify/login")
     public String handleCallback(@AuthenticationPrincipal OAuth2User principal) {
         spotifyService.updateRequestHeadersWithAuthToken(principal);
+        spotifyService.setUserProfile();
         return "Thank you for logging in - you can close this window now :)";
     }
 
@@ -91,13 +92,13 @@ public class SpotifyController {
 //    }
 
     @PostMapping("/api/spotify/users/{username}/playlists")
-    public void createPlaylist(@PathVariable String username, @RequestBody CreatePlaylistRequestDTO requestBody) {
-        spotifyService.createPlaylist(username, requestBody);
+    public Mono<CreatePlaylistResponseDTO> createPlaylist(@PathVariable String username, @RequestBody CreatePlaylistRequestDTO requestBody) {
+        return spotifyService.createPlaylist(username, requestBody);
     }
 
     @PostMapping("/api/spotify/playlists/{playlistId}/tracks")
-    public void addTracksToPlaylist(@PathVariable String playlistId, @RequestBody AddTracksRequestDTO requestBody) {
-        spotifyService.addTracksToPlaylist(playlistId, requestBody);
+    public Mono<String> addTracksToPlaylist(@PathVariable String playlistId, @RequestBody AddTracksRequestDTO requestBody) {
+        return spotifyService.addTracksToPlaylist(playlistId, requestBody);
     }
 
     @Deprecated
@@ -111,5 +112,11 @@ public class SpotifyController {
 //        public Mono<TracksDTO> getAndLoifyAllTracksInPlaylist(@PathVariable String playlistId) {
 //            return spotifyService.getAndLoifyAllTracksInPlaylist(playlistId);
         return spotifyService.getAndLoifyAllTracksInPlaylist(playlistId);
+    }
+
+    // ^This method is a combo of: [`createPlaylist()`, `addTracksToPlaylist()`]
+    @PostMapping("/api/spotify/playlists/{playlistId}/tracks/loify")
+    public CreatePlaylistResponseDTO createLoifyedPlaylistAndAddLoifyedTracks(@PathVariable String playlistId) {
+        return spotifyService.createLoifyedPlaylistAndAddLoifyedTracks(playlistId);
     }
 }
