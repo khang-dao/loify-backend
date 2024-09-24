@@ -97,8 +97,8 @@ public class SpotifyController {
     }
 
     @PostMapping("/api/spotify/playlists/{playlistId}/tracks")
-    public void addTracksToPlaylist(@PathVariable String playlistId, @RequestBody AddTracksRequestDTO requestBody) {
-        spotifyService.addTracksToPlaylist(playlistId, requestBody);
+    public Mono<String> addTracksToPlaylist(@PathVariable String playlistId, @RequestBody AddTracksRequestDTO requestBody) {
+        return spotifyService.addTracksToPlaylist(playlistId, requestBody);
     }
 
     @Deprecated
@@ -116,7 +116,7 @@ public class SpotifyController {
 
     // ^This method is a combo of: [`createPlaylist()`, `addTracksToPlaylist()`]
     @PostMapping("/api/spotify/playlists/{playlistId}/tracks/loify")
-    public void createLoifyedPlaylistAndAddLoifyedTracks(@PathVariable String playlistId) {
-        spotifyService.createLoifyedPlaylistAndAddLoifyedTracks(playlistId);
+    public CreatePlaylistResponseDTO createLoifyedPlaylistAndAddLoifyedTracks(@PathVariable String playlistId) {
+        return spotifyService.createLoifyedPlaylistAndAddLoifyedTracks(playlistId);
     }
 }
