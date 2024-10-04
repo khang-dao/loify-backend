@@ -7,10 +7,10 @@ import cloud.loify.dto.track.TrackNamesDTO;
 import cloud.loify.dto.track.TracksDTO;
 import cloud.loify.service.SpotifyService;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
@@ -22,11 +22,9 @@ import java.util.List;
 public class SpotifyController {
 
     private final SpotifyService spotifyService;
-//    private final OAuth2AuthorizedClientService authorizedClientService;
 
     public SpotifyController(SpotifyService spotifyService){
         this.spotifyService = spotifyService;
-//        this.authorizedClientService = authorizedClientService;
     }
 
     @GetMapping("/")
@@ -34,7 +32,14 @@ public class SpotifyController {
         return "Hello world! :)";
     }
 
-    @Deprecated
+    @GetMapping("/auth-check")
+    public ResponseEntity<String> isLoggedIn() {
+        return spotifyService.validateToken()
+                ? ResponseEntity.ok("User is logged in (authenticated)")
+                : ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid token or session expired (not authenticated)");
+    }
+
+    // Isn't this weird cause this is the login route AND callback? (possibly we dont need a login route... becquse all routes require login)
     @GetMapping("/api/spotify/login")
     public ResponseEntity<Void> loginCallback(@AuthenticationPrincipal OAuth2User principal, HttpServletResponse response) {
         spotifyService.updateRequestHeadersWithAuthToken(principal);
@@ -107,8 +112,6 @@ public class SpotifyController {
 
     @GetMapping("/api/spotify/playlists/{playlistId}/tracks/loify")
     public Flux<TrackSearchResponseDTO> getAndLoifyAllTracksInPlaylist(@PathVariable String playlistId) {
-//        public Mono<TracksDTO> getAndLoifyAllTracksInPlaylist(@PathVariable String playlistId) {
-//            return spotifyService.getAndLoifyAllTracksInPlaylist(playlistId);
         return spotifyService.getAndLoifyAllTracksInPlaylist(playlistId);
     }
 

@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.reactive.function.client.ClientRequest;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -70,6 +71,18 @@ public class SpotifyService {
         this.webClient = webClientBuilder.baseUrl(BASE_URL).build();
 
         this.authorizedClientService = authorizedClientService;
+    }
+
+    public Boolean validateToken() {
+        try {
+            this.getUserProfile().block();
+            return true;  // Token is valid if no exceptions are thrown
+        } catch (WebClientResponseException e) {
+            if (e.getStatusCode().is4xxClientError()) {
+                return false;   // If the token is invalid or expired, return false
+            }
+            throw e;  // Rethrow in case of other errors
+        }
     }
 
     public void updateRequestHeadersWithAuthToken(@AuthenticationPrincipal OAuth2User principal) {

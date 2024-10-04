@@ -25,8 +25,10 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Apply CORS settings
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/spotify/playlists/{playlistId}/tracks/loify").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll() // Allow preflight OPTIONS requests
+                        .requestMatchers("/").permitAll()    // Allow harmless home route
+                        .requestMatchers("/auth-check").permitAll()    // Allow for auth check
+                        .requestMatchers("/api/spotify/playlists/{playlistId}/tracks/loify").permitAll()    // Allow for now until we fix POST requests (remove after fix)
+                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()    // Allow preflight OPTIONS requests
                         .anyRequest().authenticated() // Require authentication for all other requests
                 )
                 .oauth2Login(withDefaults()) // OAuth2 login configuration
