@@ -1,10 +1,12 @@
 package cloud.loify.controller.spotify;
 
 import cloud.loify.dto.*;
+import cloud.loify.dto.response.PlaylistResponseDTO;
 import cloud.loify.dto.response.TrackSearchResponseDTO;
 import cloud.loify.dto.track.TrackNamesDTO;
 import cloud.loify.dto.track.TracksDTO;
 import cloud.loify.service.SpotifyService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -14,20 +16,17 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 public class SpotifyController {
 
     private final SpotifyService spotifyService;
-    private final OAuth2AuthorizedClientService authorizedClientService;
+//    private final OAuth2AuthorizedClientService authorizedClientService;
 
-    public SpotifyController(SpotifyService spotifyService, OAuth2AuthorizedClientService authorizedClientService){
+    public SpotifyController(SpotifyService spotifyService){
         this.spotifyService = spotifyService;
-        this.authorizedClientService = authorizedClientService;
+//        this.authorizedClientService = authorizedClientService;
     }
 
     @GetMapping("/")
@@ -35,23 +34,21 @@ public class SpotifyController {
         return "Hello world! :)";
     }
 
-    @GetMapping("/spotify/login")
-    public ResponseEntity homeSecured() {
-        final String redirectUrl = "https://accounts.spotify.com/authorize?response_type=code&client_id=a8868f0f7a4f4a8885835375ff9ca242&scope=user-read-private%20user-read-email%20playlist-modify-public%20playlist-modify-private&state=gA9N5_ldRbWUO3YXklHrhnJ3XvYuO61nt7bsjPkw2cc%3D&redirect_uri=http://localhost:8080/api/spotify/login";
-        Map<String, String> responseBody = new HashMap<>();
-        responseBody.put("redirectUrl", redirectUrl);
-
-        return ResponseEntity
-                .status(HttpStatus.OK) // Status 200 OK
-                .body(responseBody); // Response body as JSON
-    }
-
     @Deprecated
     @GetMapping("/api/spotify/login")
-    public String handleCallback(@AuthenticationPrincipal OAuth2User principal) {
+    public ResponseEntity<Void> loginCallback(@AuthenticationPrincipal OAuth2User principal, HttpServletResponse response) {
         spotifyService.updateRequestHeadersWithAuthToken(principal);
         spotifyService.setUserProfile();
-        return "Thank you for logging in - you can close this window now :)";
+
+        // Redirect to the frontend application
+        response.setStatus(HttpServletResponse.SC_FOUND); // HTTP 302
+        response.setHeader("Location", "http://localhost:3000/loify"); // Replace with your actual frontend URL
+        return new ResponseEntity<>(HttpStatus.FOUND);
+    }
+
+    @GetMapping("/api/spotify/playlists/{playlistId}")
+    public Mono<PlaylistResponseDTO> getPlaylistById(@PathVariable String playlistId) {
+        return spotifyService.getPlaylistById(playlistId);
     }
 
     @GetMapping("/api/spotify/me/playlists")
@@ -71,10 +68,10 @@ public class SpotifyController {
     }
 
     @Deprecated
-    @GetMapping("/api/spotify/playlists/{playlistId}")
-    public void getAllTrackNamesInPlaylist(@PathVariable String playlistId) {
-        System.out.println(spotifyService.getAllTrackNamesInPlaylist(playlistId));
-    }
+//    @GetMapping("/api/spotify/playlists/{playlistId}")
+//    public void getAllTrackNamesInPlaylist(@PathVariable String playlistId) {
+//        System.out.println(spotifyService.getAllTrackNamesInPlaylist(playlistId));
+//    }
 
 //    @GetMapping("/api/spotify/playlists/{playlistId}")
 //    public void getAllTrackIdsInPlaylist(@PathVariable String playlistId) {

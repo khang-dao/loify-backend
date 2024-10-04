@@ -1,6 +1,7 @@
 package cloud.loify.dto;
 
 
+import cloud.loify.dto.common.CoverImageDTO;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
@@ -12,4 +13,5 @@ public record CreatePlaylistResponseDTO(
         @JsonProperty("external_urls") Object externalUrls,
         String description,
         @JsonProperty("public") boolean isPublic,
-        boolean collaborative) {}
+        boolean collaborative,
+        List<CoverImageDTO> images) {}

@@ -204,12 +204,11 @@ public class SpotifyService {
         return null;
     }
 
-    public Mono<PlaylistResponseDTO> getPlaylist(String playlistId) {
+    public Mono<PlaylistResponseDTO> getPlaylistById(String playlistId) {
         return this.webClient.get()
                 .uri("v1/playlists/" + playlistId)
                 .retrieve()
                 .bodyToMono(PlaylistResponseDTO.class);
-
     }
 
     public Mono<CreatePlaylistResponseDTO> createPlaylist(String username, CreatePlaylistRequestDTO requestBody) {
@@ -288,7 +287,7 @@ public class SpotifyService {
     public CreatePlaylistResponseDTO createLoifyedPlaylistAndAddLoifyedTracks(@PathVariable String playlistId) {
         // STEP 0: Get current playlist details
         // STEP 1: Create new (empty 🍃) playlist
-        PlaylistResponseDTO currentPlaylist = this.getPlaylist(playlistId).block();
+        PlaylistResponseDTO currentPlaylist = this.getPlaylistById(playlistId).block();
         String currentPlaylistName = currentPlaylist.name();
         String loifyPlaylistName = this.loifyPlaylistName(currentPlaylistName);
         String loifyPlaylistDescription = this.loifyPlaylistDescription(currentPlaylistName);

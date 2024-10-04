@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.web.cors.CorsConfiguration;
@@ -18,26 +19,16 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Bean
+    @Bean // Ensure this method is marked with @Bean so Spring recognizes it as a bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-                .csrf().disable()
                 .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Apply CORS settings
-                .authorizeHttpRequests(auth -> {
-                    auth.requestMatchers("/").permitAll(); // Allow root access without authentication
-                    auth.requestMatchers("/spotify/login").permitAll();
-                    auth.requestMatchers("/api/spotify/users/{username}/playlists").permitAll();
-                    auth.requestMatchers("/api/spotify/playlists/{playlistId}").permitAll();
-                    auth.requestMatchers("/api/spotify/tracks/{trackName}").permitAll();
-                    auth.requestMatchers("/api/spotify/users/{username}/playlists").permitAll();
-                    auth.requestMatchers("/api/spotify/playlists/{playlistId}/tracks").permitAll();
-                    auth.requestMatchers("/api/spotify/tracks/loify").permitAll();
-
-                    auth.requestMatchers("/api/spotify/me/playlists").permitAll();
-                    auth.requestMatchers("/api/spotify/tracks/{trackName}").permitAll();
-                    auth.requestMatchers("/api/spotify/playlists/{playlistId}/tracks/loify").permitAll();
-                    auth.anyRequest().authenticated(); // Require authentication for all other requests
-                })
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/spotify/playlists/{playlistId}/tracks/loify").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll() // Allow preflight OPTIONS requests
+                        .anyRequest().authenticated() // Require authentication for all other requests
+                )
                 .oauth2Login(withDefaults()) // OAuth2 login configuration
                 .build(); // Build the security filter chain
     }
