@@ -5,7 +5,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -18,27 +17,29 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Bean
+    @Bean // Ensure this method is marked with @Bean so Spring recognizes it as a bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-                .csrf().disable()
                 .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Apply CORS settings
-                .authorizeHttpRequests(auth -> {
-                    auth.requestMatchers("/").permitAll(); // Allow root access without authentication
-                    auth.requestMatchers("/spotify/login").permitAll();
-                    auth.requestMatchers("/api/spotify/users/{username}/playlists").permitAll();
-                    auth.requestMatchers("/api/spotify/playlists/{playlistId}").permitAll();
-                    auth.requestMatchers("/api/spotify/tracks/{trackName}").permitAll();
-                    auth.requestMatchers("/api/spotify/users/{username}/playlists").permitAll();
-                    auth.requestMatchers("/api/spotify/playlists/{playlistId}/tracks").permitAll();
-                    auth.requestMatchers("/api/spotify/tracks/loify").permitAll();
-
-                    auth.requestMatchers("/api/spotify/me/playlists").permitAll();
-                    auth.requestMatchers("/api/spotify/tracks/{trackName}").permitAll();
-                    auth.requestMatchers("/api/spotify/playlists/{playlistId}/tracks/loify").permitAll();
-                    auth.anyRequest().authenticated(); // Require authentication for all other requests
-                })
+                .csrf(csrf -> csrf.disable()) // Disable CSRF for simplicity, adjust as needed for your app
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/").permitAll()    // Allow harmless home route
+                        .requestMatchers("/api/auth-check").permitAll()    // Allow for auth check
+                        .requestMatchers("/api/spotify/playlists/{playlistId}/tracks/loify").permitAll()    // Temporary allow until POST issue is fixed
+                        .requestMatchers("/api/spotify/logout").permitAll()    // Allow access to logout route
+                        .requestMatchers("/api/spotify/logout/webclient").permitAll()    // Allow access to logout route
+                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()    // Allow preflight OPTIONS requests
+                        .anyRequest().authenticated() // Require authentication for all other requests
+                )
                 .oauth2Login(withDefaults()) // OAuth2 login configuration
+                .logout(logout -> logout
+                        .logoutUrl("/api/spotify/logout") // Specify the logout URL
+                        .invalidateHttpSession(true)      // Invalidate the session on logout
+                        .clearAuthentication(true)        // Clear the authentication on logout
+                        .deleteCookies("JSESSIONID")      // Remove session cookies (optional)
+                        .logoutSuccessUrl("/api/spotify/logout/webclient") // Redirect after successful logout (adjust URL as needed)
+                        .permitAll()                      // Allow everyone to access the logout URL
+                )
                 .build(); // Build the security filter chain
     }
 
@@ -51,7 +52,7 @@ public class SecurityConfig {
         configuration.setAllowCredentials(true); // Allow credentials like cookies
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration); // Apply CORS settings to paths
+        source.registerCorsConfiguration("/**", configuration); // Apply CORS settings to all paths
         return source;
     }
 

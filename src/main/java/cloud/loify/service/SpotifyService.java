@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.reactive.function.client.ClientRequest;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -72,8 +73,20 @@ public class SpotifyService {
         this.authorizedClientService = authorizedClientService;
     }
 
+    public Boolean validateToken() {
+        try {
+            this.getUserProfile().block();
+            return true;  // Token is valid if no exceptions are thrown
+        } catch (WebClientResponseException e) {
+            if (e.getStatusCode().is4xxClientError()) {
+                return false;   // If the token is invalid or expired, return false
+            }
+            throw e;  // Rethrow in case of other errors
+        }
+    }
+
     public void updateRequestHeadersWithAuthToken(@AuthenticationPrincipal OAuth2User principal) {
-        OAuth2AuthorizedClient client = authorizedClientService.loadAuthorizedClient("spotify", principal.getName());
+        OAuth2AuthorizedClient client = this.authorizedClientService.loadAuthorizedClient("spotify", principal.getName());
         String accessToken = client.getAccessToken().getTokenValue();
         String refreshToken = client.getRefreshToken().getTokenValue();
 
@@ -204,12 +217,11 @@ public class SpotifyService {
         return null;
     }
 
-    public Mono<PlaylistResponseDTO> getPlaylist(String playlistId) {
+    public Mono<PlaylistResponseDTO> getPlaylistById(String playlistId) {
         return this.webClient.get()
                 .uri("v1/playlists/" + playlistId)
                 .retrieve()
                 .bodyToMono(PlaylistResponseDTO.class);
-
     }
 
     public Mono<CreatePlaylistResponseDTO> createPlaylist(String username, CreatePlaylistRequestDTO requestBody) {
@@ -288,7 +300,7 @@ public class SpotifyService {
     public CreatePlaylistResponseDTO createLoifyedPlaylistAndAddLoifyedTracks(@PathVariable String playlistId) {
         // STEP 0: Get current playlist details
         // STEP 1: Create new (empty 🍃) playlist
-        PlaylistResponseDTO currentPlaylist = this.getPlaylist(playlistId).block();
+        PlaylistResponseDTO currentPlaylist = this.getPlaylistById(playlistId).block();
         String currentPlaylistName = currentPlaylist.name();
         String loifyPlaylistName = this.loifyPlaylistName(currentPlaylistName);
         String loifyPlaylistDescription = this.loifyPlaylistDescription(currentPlaylistName);
@@ -431,4 +443,9 @@ public class SpotifyService {
                 .retrieve()
                 .bodyToMono(String.class);
     }
+
+        public void resetWebClient() {
+            this.webClient = null;
+            System.out.println("WebClient has been reset to non-authenticated version.");
+        }
 }
