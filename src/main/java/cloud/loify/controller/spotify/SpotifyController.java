@@ -7,6 +7,7 @@ import cloud.loify.dto.track.TrackNamesDTO;
 import cloud.loify.dto.track.TracksDTO;
 import cloud.loify.service.SpotifyService;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,7 +33,7 @@ public class SpotifyController {
         return "Hello world! :)";
     }
 
-    @GetMapping("/auth-check")
+    @GetMapping("/api/auth-check")
     public ResponseEntity<String> isLoggedIn() {
         return spotifyService.validateToken()
                 ? ResponseEntity.ok("User is logged in (authenticated)")
@@ -119,5 +120,11 @@ public class SpotifyController {
     @PostMapping("/api/spotify/playlists/{playlistId}/tracks/loify")
     public CreatePlaylistResponseDTO createLoifyedPlaylistAndAddLoifyedTracks(@PathVariable String playlistId) {
         return spotifyService.createLoifyedPlaylistAndAddLoifyedTracks(playlistId);
+    }
+
+    @GetMapping("/api/spotify/logout/webclient")
+    public ResponseEntity<Void> logout() {
+        spotifyService.resetWebClient(); // Call the service method to invalidate the token
+        return ResponseEntity.noContent().build(); // Return 204 No Content response
     }
 }

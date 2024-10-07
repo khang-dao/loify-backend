@@ -86,7 +86,7 @@ public class SpotifyService {
     }
 
     public void updateRequestHeadersWithAuthToken(@AuthenticationPrincipal OAuth2User principal) {
-        OAuth2AuthorizedClient client = authorizedClientService.loadAuthorizedClient("spotify", principal.getName());
+        OAuth2AuthorizedClient client = this.authorizedClientService.loadAuthorizedClient("spotify", principal.getName());
         String accessToken = client.getAccessToken().getTokenValue();
         String refreshToken = client.getRefreshToken().getTokenValue();
 
@@ -443,4 +443,9 @@ public class SpotifyService {
                 .retrieve()
                 .bodyToMono(String.class);
     }
+
+        public void resetWebClient() {
+            this.webClient = null;
+            System.out.println("WebClient has been reset to non-authenticated version.");
+        }
 }
