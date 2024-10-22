@@ -90,7 +90,6 @@ public class SpotifyService {
         String accessToken = client.getAccessToken().getTokenValue();
         String refreshToken = client.getRefreshToken().getTokenValue();
 
-
         this.webClient = this.webClientBuilder
                 .filter(ExchangeFilterFunction.ofRequestProcessor(request -> {
                     ClientRequest updatedRequest = ClientRequest.from(request)

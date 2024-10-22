@@ -17,30 +17,30 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Bean // Ensure this method is marked with @Bean so Spring recognizes it as a bean
+    @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Apply CORS settings
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable()) // Disable CSRF for simplicity, adjust as needed for your app
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/").permitAll()    // Allow harmless home route
-                        .requestMatchers("/api/auth-check").permitAll()    // Allow for auth check
+                        .requestMatchers("/").permitAll()
+                        .requestMatchers("/api/auth-check").permitAll()
                         .requestMatchers("/api/spotify/playlists/{playlistId}/tracks/loify").permitAll()    // Temporary allow until POST issue is fixed
                         .requestMatchers("/api/spotify/logout").permitAll()    // Allow access to logout route
                         .requestMatchers("/api/spotify/logout/webclient").permitAll()    // Allow access to logout route
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()    // Allow preflight OPTIONS requests
                         .anyRequest().authenticated() // Require authentication for all other requests
                 )
-                .oauth2Login(withDefaults()) // OAuth2 login configuration
+                .oauth2Login(withDefaults())
                 .logout(logout -> logout
-                        .logoutUrl("/api/spotify/logout") // Specify the logout URL
-                        .invalidateHttpSession(true)      // Invalidate the session on logout
-                        .clearAuthentication(true)        // Clear the authentication on logout
-                        .deleteCookies("JSESSIONID")      // Remove session cookies (optional)
-                        .logoutSuccessUrl("/api/spotify/logout/webclient") // Redirect after successful logout (adjust URL as needed)
-                        .permitAll()                      // Allow everyone to access the logout URL
+                        .logoutUrl("/api/spotify/logout")
+                        .invalidateHttpSession(true)
+                        .clearAuthentication(true)
+                        .deleteCookies("JSESSIONID")
+                        .logoutSuccessUrl("/api/spotify/logout/webclient")
+                        .permitAll()    // Allow everyone to access the logout URL -> see if i can remove the .requestMatchers on `/api/spotify/logout` because I have this alr
                 )
-                .build(); // Build the security filter chain
+                .build();
     }
 
     @Bean

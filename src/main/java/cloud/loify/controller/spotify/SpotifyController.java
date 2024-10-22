@@ -30,7 +30,7 @@ public class SpotifyController {
 
     @GetMapping("/")
     public String home() {
-        return "Hello world! :)";
+        return "Welcome to the Loify API! Visit the docs for more information :)";
     }
 
     @GetMapping("/api/auth-check")
