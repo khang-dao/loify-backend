@@ -14,12 +14,12 @@ import cloud.loify.packages.track.TrackService;
 import cloud.loify.packages.utils.ImageUtils;
 import cloud.loify.packages.utils.StringUtils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PathVariable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
 
 import java.io.IOException;
 import java.util.List;
@@ -33,6 +33,9 @@ public class PlaylistService {
     private final TrackService track;
     private final MeService me;
 
+    // Logger instance
+    private static final Logger logger = LoggerFactory.getLogger(PlaylistService.class);
+
     // TODO: should TrackService be injected here? or should the method required (getFirstTrackByTrackName) be made static?
     public PlaylistService(AuthService authService, TrackService trackService, MeService meService) {
         this.auth = authService;
@@ -40,40 +43,43 @@ public class PlaylistService {
         this.me = meService;
     }
 
-
     public Mono<PlaylistResponseDTO> getPlaylistById(String playlistId) {
+        logger.info("Retrieving playlist details for ID: {}", playlistId);
         return this.auth.webClient.get()
                 .uri("v1/playlists/" + playlistId)
                 .retrieve()
-                .bodyToMono(PlaylistResponseDTO.class);
+                .bodyToMono(PlaylistResponseDTO.class)
+                .doOnSuccess(playlist -> logger.info("Successfully retrieved playlist: {}", playlist))
+                .doOnError(err -> logger.error("Error retrieving playlist ID {}: {}", playlistId, err.getMessage()));
     }
 
     // TODO: This MAY be able to be removed - does it return BASICALLY the same content as `getPlaylistById()`
     public Mono<TracksDTO> getAllTracksInPlaylist(String playlistId) {
+        logger.info("Retrieving all tracks for playlist ID: {}", playlistId);
         return this.auth.webClient.get()
                 .uri("/v1/playlists/" + playlistId + "/tracks")
                 .retrieve()
-                .bodyToMono(TracksDTO.class);
+                .bodyToMono(TracksDTO.class)
+                .doOnSuccess(tracks -> logger.info("Successfully retrieved tracks for playlist ID: {}", playlistId))
+                .doOnError(err -> logger.error("Error retrieving tracks for playlist ID {}: {}", playlistId, err.getMessage()));
     }
 
     // TODO: Fix - "spotify:track:54eCPwH8hZqAJBMlZ9YEyJ" --> "54eCPwH8hZqAJBMlZ9YEyJ" (if deemed possible)
     public Mono<String> addTracksToPlaylist(String playlistId, AddTracksRequestDTO requestBody) {
-        System.out.println(requestBody);
-        System.out.println("Adding tracks to playlist...");
+        logger.info("Adding tracks to playlist ID: {} with request body: {}", playlistId, requestBody);
         return this.auth.webClient.post()
                 .uri("v1/playlists/" + playlistId + "/tracks")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(requestBody)
                 .retrieve()
-                .bodyToMono(String.class);  // NOTE: String = `snapshot_id`
+                .bodyToMono(String.class)  // NOTE: String = `snapshot_id`
+                .doOnSuccess(snapshotId -> logger.info("Successfully added tracks to playlist ID: {}. Snapshot ID: {}", playlistId, snapshotId))
+                .doOnError(err -> logger.error("Error adding tracks to playlist ID {}: {}", playlistId, err.getMessage()));
     }
 
-
-
-
     public Flux<TrackSearchResponseDTO> getAndLoifyAllTracksInPlaylist(String playlistId) {
-//    public void getAndLoifyAllTracksInPlaylist(String playlistId) {
         // STEP 1: Get all `tracks` in playlist --- (maybe just call `getAllTracksInPlaylist()`)
+        logger.info("Getting all tracks in playlist ID: {}", playlistId);
         TracksDTO tracks = this.getAllTracksInPlaylist(playlistId).block();
 
         // STEP 2: Extract all `tracksNames` in playlist
@@ -91,16 +97,16 @@ public class PlaylistService {
                 .flatMap(mono -> mono);  // Flatten the Mono<Track> into a Flux<Track>
 
         // STEP 4: Now we have all Mono<TrackDTO> `loifyedTracks`, simply return - `return loifyedTracks`
+        logger.info("Successfully loified all tracks in playlist ID: {}", playlistId);
         return loifyedTracks;
-
     }
 
     // TODO: Make this atomic - because sometimes the playlist is created, but the songs aren't added
     // TODO: ^ need to make it so that if one fails, then it's as if the method was never called
     // TODO: ^ (might involve deleting the playlist if the transaction fails)
-    public CreatePlaylistResponseDTO createLoifyedPlaylistAndAddLoifyedTracks(@PathVariable String playlistId) {
+    public CreatePlaylistResponseDTO createLoifyedPlaylistAndAddLoifyedTracks(String playlistId) {
         // STEP 0: Get current playlist details
-        // STEP 1: Create new (empty 🍃) playlist
+        logger.info("Creating loified playlist and adding loified tracks for playlist ID: {}", playlistId);
         PlaylistResponseDTO currentPlaylist = this.getPlaylistById(playlistId).block();
         String currentPlaylistName = currentPlaylist.name();
         String loifyPlaylistName = StringUtils.loifyPlaylistName(currentPlaylistName);
@@ -120,17 +126,17 @@ public class PlaylistService {
             this.updatePlaylistImage(loifyPlaylistId, loifyPlaylistImage).block();
         }
         catch (IOException e) {
+            logger.error("Error while processing the playlist image: {}", e.getMessage());
             throw new RuntimeException(e);
         }
         catch (Exception e) {
             // TODO: Implement default cover image
-            System.out.println("Original Playlist does not have cover image... fallback to default loify image");
+            logger.warn("Original Playlist does not have cover image... fallback to default loify image");
         }
-
 
         // STEP 3: Loify all tracks in playlist -> return an array of 🍃tracks -> Flux<TrackSearchResponseDTO>.block()
         List<TrackSearchResponseDTO> loifyedTracks = this.getAndLoifyAllTracksInPlaylist(playlistId).collectList().block();
-        System.out.println(loifyedTracks);
+        logger.info("Loified tracks for playlist ID: {}", playlistId);
 
         // STEP 4: Add loify-ed tracks -> to (empty 🍃) playlist
         List<String> uris = loifyedTracks
@@ -139,7 +145,7 @@ public class PlaylistService {
                     try {
                         return (TrackItemObjectDTO) t.tracks().items().get(0);
                     } catch (Exception e) {
-                        System.out.println("No track found - skipping item...");
+                        logger.warn("No track found - skipping item...");
                         return null;
                     }
                 })
@@ -147,7 +153,7 @@ public class PlaylistService {
                     try {
                         return "spotify:track:" + t.id();   // TODO: Add `uri` field to DTO and use that instead of appending here?
                     } catch (Exception e) {
-                        System.out.println("No track found - skipping item again...");
+                        logger.warn("No track found - skipping item again...");
                         return null;
                     }
                 })
@@ -156,20 +162,22 @@ public class PlaylistService {
 
         AddTracksRequestDTO addTracksReqBody = new AddTracksRequestDTO(uris);
 
-        System.out.println("HIIIIII: " + addTracksReqBody);
+        logger.info("Adding loified tracks to new playlist ID: {}", loifyPlaylistId);
         this.addTracksToPlaylist(loifyPlaylistId, addTracksReqBody).block();       // <- TODO: make the playlist dynamic (must come from above )
 
         // STEP 5: Return the `href` url of the 🍃 playlist - so that users can view in Spotify
         return response;
     }
 
-
     public Mono<String> updatePlaylistImage(String playlistId, String base64Image) {
+        logger.info("Updating playlist image for playlist ID: {}", playlistId);
         return this.auth.webClient.put()
                 .uri("v1/playlists/" + playlistId + "/images")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(base64Image)
                 .retrieve()
-                .bodyToMono(String.class);
+                .bodyToMono(String.class)
+                .doOnSuccess(success -> logger.info("Successfully updated playlist image for playlist ID: {}", playlistId))
+                .doOnError(err -> logger.error("Error updating playlist image for playlist ID {}: {}", playlistId, err.getMessage()));
     }
 }

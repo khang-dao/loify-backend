@@ -14,6 +14,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import reactor.core.publisher.Mono;
 
+/**
+ * Controller for handling authentication-related operations.
+ */
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
@@ -27,8 +30,12 @@ public class AuthController {
         this.authService = authService;
     }
 
-    // Check if the user is logged in
-    // TODO: remove /check endpoint
+    /**
+     * Checks if the user is logged in by retrieving their profile.
+     *
+     * @return Mono<ResponseEntity<String>> containing the login status message.
+     * If the user is logged in, returns 200 OK; otherwise, returns 401 UNAUTHORIZED.
+     */
     @GetMapping("/session/check")
     public Mono<ResponseEntity<String>> getSessionStatus() {
         return authService.getUserProfile()
@@ -43,8 +50,15 @@ public class AuthController {
                 });
     }
 
-    // Create a new session (login)
-    // TODO: change back to @PostMapping when implementing actual login logic
+    /**
+     * Creates a new session (login) for the authenticated user.
+     *
+     * @param principal The authenticated OAuth2 user.
+     * @param response The HttpServletResponse used for redirection.
+     * @return ResponseEntity<Void> indicating the result of the login attempt.
+     *         Returns 302 FOUND if successful; 401 UNAUTHORIZED if principal is null;
+     *         500 INTERNAL_SERVER_ERROR if an exception occurs.
+     */
     @GetMapping("/session")
     public ResponseEntity<Void> createSession(@AuthenticationPrincipal OAuth2User principal, HttpServletResponse response) {
         try {
@@ -66,7 +80,12 @@ public class AuthController {
         }
     }
 
-    // Logout and invalidate the current session
+    /**
+     * Logs out the user by invalidating the current session.
+     *
+     * @return ResponseEntity<Void> indicating the result of the logout attempt.
+     *         Returns 204 NO CONTENT if successful; 500 INTERNAL_SERVER_ERROR if an exception occurs.
+     */
     @DeleteMapping("/session")
     public ResponseEntity<Void> deleteSession() {
         try {

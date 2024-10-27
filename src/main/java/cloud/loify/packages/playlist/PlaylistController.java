@@ -6,6 +6,8 @@ import cloud.loify.dto.response.PlaylistResponseDTO;
 import cloud.loify.dto.response.TrackSearchResponseDTO;
 import cloud.loify.dto.track.TracksDTO;
 import cloud.loify.packages.playlist.exceptions.PlaylistNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,11 +15,15 @@ import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+/**
+ * Controller for managing playlists.
+ */
 @RestController
 @RequestMapping("/api/v1/playlists")
 public class PlaylistController {
 
     private final PlaylistService playlistService;
+    private static final Logger logger = LoggerFactory.getLogger(PlaylistController.class);
 
     public PlaylistController(PlaylistService playlistService) {
         this.playlistService = playlistService;
@@ -32,12 +38,17 @@ public class PlaylistController {
      */
     @GetMapping("/{playlistId}")
     public Mono<ResponseEntity<PlaylistResponseDTO>> getPlaylistById(@PathVariable String playlistId) {
+        logger.info("Request to retrieve playlist with ID: {}", playlistId);
         return playlistService.getPlaylistById(playlistId)
-                .map(playlist -> ResponseEntity.ok(playlist))
-                .switchIfEmpty(Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(null))) // Return 404 if not found
-                .onErrorResume(error -> Mono.error(new ResponseStatusException(
-                        HttpStatus.INTERNAL_SERVER_ERROR, "Error retrieving playlist", error)));
+                .map(playlist -> {
+                    logger.info("Successfully retrieved playlist: {}", playlistId);
+                    return ResponseEntity.ok(playlist);
+                })
+                .switchIfEmpty(Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body(null))) // Return 404 if not found
+                .onErrorResume(error -> {
+                    logger.error("Error retrieving playlist with ID {}: {}", playlistId, error.getMessage());
+                    return Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error retrieving playlist", error));
+                });
     }
 
     // TODO: This MAY be able to be removed - does it return BASICALLY the same content as `getPlaylistById()`
@@ -50,12 +61,17 @@ public class PlaylistController {
      */
     @GetMapping("/{playlistId}/tracks")
     public Mono<ResponseEntity<TracksDTO>> getAllTracksInPlaylist(@PathVariable String playlistId) {
+        logger.info("Request to retrieve all tracks in playlist with ID: {}", playlistId);
         return playlistService.getAllTracksInPlaylist(playlistId)
-                .map(tracks -> ResponseEntity.ok(tracks))
-                .switchIfEmpty(Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(null))) // Return 404 if not found
-                .onErrorResume(error -> Mono.error(new ResponseStatusException(
-                        HttpStatus.INTERNAL_SERVER_ERROR, "Error retrieving tracks", error)));
+                .map(tracks -> {
+                    logger.info("Successfully retrieved tracks for playlist: {}", playlistId);
+                    return ResponseEntity.ok(tracks);
+                })
+                .switchIfEmpty(Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body(null))) // Return 404 if not found
+                .onErrorResume(error -> {
+                    logger.error("Error retrieving tracks for playlist {}: {}", playlistId, error.getMessage());
+                    return Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error retrieving tracks", error));
+                });
     }
 
     // TODO: Consider changing to PUT Request - Ask ChatGPT
@@ -70,13 +86,20 @@ public class PlaylistController {
     @PostMapping("/{playlistId}/tracks")
     public Mono<ResponseEntity<String>> addTracksToPlaylist(@PathVariable String playlistId,
                                                             @RequestBody AddTracksRequestDTO requestBody) {
+        logger.info("Request to add tracks to playlist with ID: {}", playlistId);
         return playlistService.addTracksToPlaylist(playlistId, requestBody)
-                .map(updatedPlaylistId -> ResponseEntity.ok(updatedPlaylistId))
-                .onErrorResume(PlaylistNotFoundException.class, error -> Mono.just(
-                        ResponseEntity.status(HttpStatus.NOT_FOUND)
-                                .body("Playlist not found: " + playlistId)))
-                .onErrorResume(error -> Mono.error(new ResponseStatusException(
-                        HttpStatus.INTERNAL_SERVER_ERROR, "Error adding tracks", error)));
+                .map(updatedPlaylistId -> {
+                    logger.info("Successfully added tracks to playlist: {}", playlistId);
+                    return ResponseEntity.ok(updatedPlaylistId);
+                })
+                .onErrorResume(PlaylistNotFoundException.class, error -> {
+                    logger.warn("Attempted to add tracks to a non-existing playlist: {}", playlistId);
+                    return Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Playlist not found: " + playlistId));
+                })
+                .onErrorResume(error -> {
+                    logger.error("Error adding tracks to playlist {}: {}", playlistId, error.getMessage());
+                    return Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error adding tracks", error));
+                });
     }
 
     /**
@@ -88,11 +111,17 @@ public class PlaylistController {
      */
     @GetMapping("/{playlistId}/loify")
     public Mono<ResponseEntity<Flux<TrackSearchResponseDTO>>> getAndLoifyAllTracksInPlaylist(@PathVariable String playlistId) {
+        logger.info("Request to loify all tracks in playlist with ID: {}", playlistId);
         return playlistService.getAndLoifyAllTracksInPlaylist(playlistId)
                 .collectList()
-                .map(loifiedTracks -> ResponseEntity.ok(Flux.fromIterable(loifiedTracks)))
-                .onErrorResume(error -> Mono.error(new ResponseStatusException(
-                        HttpStatus.INTERNAL_SERVER_ERROR, "Error loifying tracks", error)));
+                .map(loifiedTracks -> {
+                    logger.info("Successfully loified tracks for playlist: {}", playlistId);
+                    return ResponseEntity.ok(Flux.fromIterable(loifiedTracks));
+                })
+                .onErrorResume(error -> {
+                    logger.error("Error loifying tracks for playlist {}: {}", playlistId, error.getMessage());
+                    return Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error loifying tracks", error));
+                });
     }
 
     // NOTE: This method is a combo of: [`createPlaylist()`, `addTracksToPlaylist()`]
