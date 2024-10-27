@@ -2,15 +2,15 @@ package cloud.loify.packages.utils;
 
 public class StringUtils {
 
-    private String loifyPlaylistName(String playlistName){
+    public static String loifyPlaylistName(String playlistName){
         return "loify - " + playlistName + " 🍃";
     }
 
-    private String loifyPlaylistDescription(String playlistName){
+    public static String loifyPlaylistDescription(String playlistName){
         return "a loify-ed version of playlist: " + playlistName;
     }
 
-    private String loifyTrackName(String trackName){
+    public static String loifyTrackName(String trackName){
         return trackName + " lofi";
     }
 }

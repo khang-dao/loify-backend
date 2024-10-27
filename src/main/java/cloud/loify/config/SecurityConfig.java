@@ -4,11 +4,19 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
+import org.springframework.security.oauth2.client.registration.InMemoryReactiveClientRegistrationRepository;
+import org.springframework.security.oauth2.client.registration.ReactiveClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.DefaultReactiveOAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.client.web.server.ServerOAuth2AuthorizedClientRepository;
+import org.springframework.security.oauth2.client.web.server.WebSessionServerOAuth2AuthorizedClientRepository;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.springframework.security.config.Customizer.withDefaults;
@@ -28,6 +36,13 @@ public class SecurityConfig {
                         .requestMatchers("/api/spotify/playlists/{playlistId}/tracks/loify").permitAll()    // Temporary allow until POST issue is fixed
                         .requestMatchers("/api/spotify/logout").permitAll()    // Allow access to logout route
                         .requestMatchers("/api/spotify/logout/webclient").permitAll()    // Allow access to logout route
+
+                        // TODO: Delete these 3
+                        .requestMatchers("/api/v1/playlists/{username}").permitAll()
+                        .requestMatchers("/api/v1/playlists/{playlistId}/tracks").permitAll()
+                        .requestMatchers("/api/v1/playlists/{playlistId}/loify").permitAll()
+                        .requestMatchers("/api/v1/me/playlists").permitAll()
+
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()    // Allow preflight OPTIONS requests
                         .anyRequest().authenticated() // Require authentication for all other requests
                 )
@@ -55,5 +70,4 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", configuration); // Apply CORS settings to all paths
         return source;
     }
-
 }

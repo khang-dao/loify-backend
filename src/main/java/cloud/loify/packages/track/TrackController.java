@@ -1,7 +1,6 @@
 package cloud.loify.packages.track;
 
 import cloud.loify.dto.response.TrackSearchResponseDTO;
-import cloud.loify.dto.track.TrackNamesDTO;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
@@ -11,8 +10,14 @@ import java.util.List;
 @RequestMapping("/api/v1/tracks")
 public class TrackController {
 
-//    @GetMapping("/api/spotify/tracks/{trackName}")
-//    public Mono<TrackSearchResponseDTO> getFirstTrackByTrackName(@PathVariable String trackName) {
-//        return spotifyService.getFirstTrackByTrackName(trackName);
-//    }
+    private final TrackService trackService;
+
+    public TrackController(TrackService trackService) {
+        this.trackService = trackService;
+    }
+
+    @GetMapping // Example URL: http://loify.com/api/v1/tracks?trackName=hotline+bling
+    public Mono<TrackSearchResponseDTO> getFirstTrackByTrackName(@RequestParam String trackName) {
+        return trackService.getFirstTrackByTrackName(trackName);
+    }
 }

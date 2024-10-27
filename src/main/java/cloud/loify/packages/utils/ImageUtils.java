@@ -10,7 +10,7 @@ import java.util.Base64;
 
 public class ImageUtils {
 
-    private String loifyPlaylistImage(String imageUrl) throws IOException {
+    public static String loifyPlaylistImage(String imageUrl) throws IOException {
         // Download image from the provided URL
         URL url = new URL(imageUrl);
         BufferedImage originalImage = ImageIO.read(url);
@@ -60,7 +60,7 @@ public class ImageUtils {
         return base64Image;
     }
 
-    private BufferedImage resizeImage(BufferedImage originalImage) {
+    private static BufferedImage resizeImage(BufferedImage originalImage) {
         int originalWidth = originalImage.getWidth();
         int originalHeight = originalImage.getHeight();
 
