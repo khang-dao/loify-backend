@@ -1,30 +1,33 @@
 package cloud.loify.packages.playlist;
 
-import cloud.loify.dto.AddTracksRequestDTO;
-import cloud.loify.dto.CreatePlaylistRequestDTO;
-import cloud.loify.dto.CreatePlaylistResponseDTO;
-import cloud.loify.dto.response.PlaylistResponseDTO;
-import cloud.loify.dto.response.TrackSearchResponseDTO;
-import cloud.loify.dto.track.TrackItemDTO;
-import cloud.loify.dto.track.TrackItemObjectDTO;
-import cloud.loify.dto.track.TracksDTO;
+import cloud.loify.packages.playlist.dto.CreatePlaylistRequestDTO;
+import cloud.loify.packages.playlist.dto.CreatePlaylistResponseDTO;
+import cloud.loify.packages.playlist.dto.AddTracksToPlaylistRequestDTO;
+import cloud.loify.packages.playlist.dto.GetPlaylistResponseDTO;
+import cloud.loify.packages.track.dto.SearchTrackResponseDTO;
+import cloud.loify.packages.track.dto.TrackDetailsFromPlaylistDTO;
+import cloud.loify.packages.track.dto.GetTracksFromPlaylistResponseDTO;
 import cloud.loify.packages.auth.AuthService;
 import cloud.loify.packages.me.MeService;
 import cloud.loify.packages.track.TrackService;
 import cloud.loify.packages.utils.ImageUtils;
 import cloud.loify.packages.utils.StringUtils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
+import java.time.Duration;
+import java.util.List;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
 public class PlaylistService {
@@ -33,6 +36,9 @@ public class PlaylistService {
     private final TrackService track;
     private final MeService me;
 
+    // Logger instance
+    private static final Logger logger = LoggerFactory.getLogger(PlaylistService.class);
+
     // TODO: should TrackService be injected here? or should the method required (getFirstTrackByTrackName) be made static?
     public PlaylistService(AuthService authService, TrackService trackService, MeService meService) {
         this.auth = authService;
@@ -40,136 +46,190 @@ public class PlaylistService {
         this.me = meService;
     }
 
-
-    public Mono<PlaylistResponseDTO> getPlaylistById(String playlistId) {
+    public Mono<GetPlaylistResponseDTO> getPlaylistById(String playlistId) {
+        logger.info("Retrieving playlist details for ID: {}", playlistId);
         return this.auth.webClient.get()
                 .uri("v1/playlists/" + playlistId)
                 .retrieve()
-                .bodyToMono(PlaylistResponseDTO.class);
+                .bodyToMono(GetPlaylistResponseDTO.class)
+                .doOnSuccess(playlist -> logger.info("Successfully retrieved playlist: {}", playlist))
+                .doOnError(err -> logger.error("Error retrieving playlist ID {}: {}", playlistId, err.getMessage()));
     }
 
     // TODO: This MAY be able to be removed - does it return BASICALLY the same content as `getPlaylistById()`
-    public Mono<TracksDTO> getAllTracksInPlaylist(String playlistId) {
+    public Mono<GetTracksFromPlaylistResponseDTO> getAllTracksInPlaylist(String playlistId) {
+        logger.info("Retrieving all tracks for playlist ID: {}", playlistId);
         return this.auth.webClient.get()
                 .uri("/v1/playlists/" + playlistId + "/tracks")
                 .retrieve()
-                .bodyToMono(TracksDTO.class);
+                .bodyToMono(GetTracksFromPlaylistResponseDTO.class)
+                .doOnSuccess(tracks -> logger.info("Successfully retrieved tracks for playlist ID: {}", playlistId))
+                .doOnError(err -> logger.error("Error retrieving tracks for playlist ID {}: {}", playlistId, err.getMessage()));
     }
 
     // TODO: Fix - "spotify:track:54eCPwH8hZqAJBMlZ9YEyJ" --> "54eCPwH8hZqAJBMlZ9YEyJ" (if deemed possible)
-    public Mono<String> addTracksToPlaylist(String playlistId, AddTracksRequestDTO requestBody) {
-        System.out.println(requestBody);
-        System.out.println("Adding tracks to playlist...");
+    public Mono<String> addTracksToPlaylist(String playlistId, AddTracksToPlaylistRequestDTO requestBody) {
+        logger.info("Adding tracks to playlist ID: {} with request body: {}", playlistId, requestBody);
         return this.auth.webClient.post()
                 .uri("v1/playlists/" + playlistId + "/tracks")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(requestBody)
                 .retrieve()
-                .bodyToMono(String.class);  // NOTE: String = `snapshot_id`
+                .bodyToMono(String.class)  // NOTE: String = `snapshot_id`
+                .doOnSuccess(snapshotId -> logger.info("Successfully added tracks to playlist ID: {}. Snapshot ID: {}", playlistId, snapshotId))
+                .doOnError(err -> logger.error("Error adding tracks to playlist ID [{}]: {}", playlistId, err.getMessage()));
+    }
+
+    public Flux<SearchTrackResponseDTO> getAndLoifyAllTracksInPlaylist(String playlistId) {
+        logger.info("Getting all tracks in playlist ID: {}", playlistId);
+
+        return this.getAllTracksInPlaylist(playlistId)
+                .flatMapMany(tracks -> {
+                    if (tracks == null || tracks.items() == null || tracks.items().isEmpty()) {
+                        logger.warn("No tracks found in playlist ID: {}", playlistId);
+                        return Flux.empty(); // Return an empty Flux if no tracks are found
+                    }
+
+                    return Flux.fromIterable(tracks.items())
+                            .map(t -> (TrackDetailsFromPlaylistDTO) t) // TODO: might be able to delete
+                            .map(t -> StringUtils.loifyTrackName(t.track().name()))
+                            .flatMap(this.track::getFirstTrackByTrackName);
+                })
+                .doOnComplete(() -> logger.info("Successfully loified all tracks in playlist ID: {}", playlistId))
+                .doOnError(err -> {
+                    logger.error("Error loifying tracks in playlist ID {}: {}", playlistId, err.getMessage());
+                    throw new RuntimeException(err);
+                });
     }
 
 
-
-
-    public Flux<TrackSearchResponseDTO> getAndLoifyAllTracksInPlaylist(String playlistId) {
-//    public void getAndLoifyAllTracksInPlaylist(String playlistId) {
-        // STEP 1: Get all `tracks` in playlist --- (maybe just call `getAllTracksInPlaylist()`)
-        TracksDTO tracks = this.getAllTracksInPlaylist(playlistId).block();
-
-        // STEP 2: Extract all `tracksNames` in playlist
-        Stream<String> trackNames = tracks.items()
-                .stream()
-                .map((t) -> (TrackItemDTO) t)
-                .map((t) -> t.track().name());
-
-        // STEP 3: "loify" all `trackNames` - `loifyedTrackNames = trackNames.map(this::loifyTrackName)`
-        Stream<String> loifyedTrackNames = trackNames.map(StringUtils::loifyTrackName);
-
-        // STEP 3: Get all "loify-ed" tracks (by using FIRST_TRACK algo) - `loifedTracks = loifyedTrackNames.map(this::getFirstTrackByTrackName)`
-        Flux<TrackSearchResponseDTO> loifyedTracks = Flux.fromStream(loifyedTrackNames
-                        .map(this.track::getFirstTrackByTrackName))
-                .flatMap(mono -> mono);  // Flatten the Mono<Track> into a Flux<Track>
-
-        // STEP 4: Now we have all Mono<TrackDTO> `loifyedTracks`, simply return - `return loifyedTracks`
-        return loifyedTracks;
-
-    }
 
     // TODO: Make this atomic - because sometimes the playlist is created, but the songs aren't added
     // TODO: ^ need to make it so that if one fails, then it's as if the method was never called
     // TODO: ^ (might involve deleting the playlist if the transaction fails)
-    public CreatePlaylistResponseDTO createLoifyedPlaylistAndAddLoifyedTracks(@PathVariable String playlistId) {
+    public Mono<CreatePlaylistResponseDTO> createLoifyedPlaylistAndAddLoifyedTracks(String playlistId) {
         // STEP 0: Get current playlist details
-        // STEP 1: Create new (empty 🍃) playlist
-        PlaylistResponseDTO currentPlaylist = this.getPlaylistById(playlistId).block();
-        String currentPlaylistName = currentPlaylist.name();
-        String loifyPlaylistName = StringUtils.loifyPlaylistName(currentPlaylistName);
-        String loifyPlaylistDescription = StringUtils.loifyPlaylistDescription(currentPlaylistName);
+        logger.info("Creating loified playlist and adding loified tracks for playlist ID: {}", playlistId);
 
-        // TODO: Check if playlist exists already
-        CreatePlaylistRequestDTO createPlaylistReqBody = new CreatePlaylistRequestDTO(loifyPlaylistName, loifyPlaylistDescription, true, true);
+        return this.getPlaylistById(playlistId)  // Get the current playlist details reactively
+                .flatMap(currentPlaylist -> {
+                    String currentPlaylistName = currentPlaylist.name();
+                    String loifyPlaylistName = StringUtils.loifyPlaylistName(currentPlaylistName);
+                    String loifyPlaylistDescription = StringUtils.loifyPlaylistDescription(currentPlaylistName);
 
-        // TODO: Replace`this.createPlaylist("""""xyz"""")` with an actual way to get `this.userProfile.id()
-        CreatePlaylistResponseDTO response = this.me.createPlaylist(createPlaylistReqBody).block();
-        String loifyPlaylistId = response.id();
+                    // Create the request body for the new playlist
+                    CreatePlaylistRequestDTO createPlaylistReqBody = new CreatePlaylistRequestDTO(loifyPlaylistName, loifyPlaylistDescription, true, true);
 
-        // STEP 2: Update (empty 🍃) playlist - image
-        try {
-            String currentPlaylistImage = currentPlaylist.images().get(0).url();
-            String loifyPlaylistImage = ImageUtils.loifyPlaylistImage(currentPlaylistImage);
-            this.updatePlaylistImage(loifyPlaylistId, loifyPlaylistImage).block();
-        }
-        catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        catch (Exception e) {
-            // TODO: Implement default cover image
-            System.out.println("Original Playlist does not have cover image... fallback to default loify image");
-        }
+                    // Create the new playlist
+                    return this.me.createPlaylistForCurrentUser(createPlaylistReqBody)
+                            .flatMap(response -> {
+                                String loifyPlaylistId = response.id();
 
+                                // STEP 2: Update the playlist image
+                                String currentPlaylistImage = currentPlaylist.images().isEmpty() ? null : currentPlaylist.images().get(0).url();
+                                String loifyPlaylistImage = null;
+                                try {
+                                    loifyPlaylistImage = ImageUtils.loifyPlaylistImage(currentPlaylistImage);
+                                } catch (IOException e) {
+                                    throw new RuntimeException(e);
+                                }
 
-        // STEP 3: Loify all tracks in playlist -> return an array of 🍃tracks -> Flux<TrackSearchResponseDTO>.block()
-        List<TrackSearchResponseDTO> loifyedTracks = this.getAndLoifyAllTracksInPlaylist(playlistId).collectList().block();
-        System.out.println(loifyedTracks);
+                                return this.updatePlaylistImage(loifyPlaylistId, loifyPlaylistImage)
+                                        .onErrorResume(err -> {
+                                            logger.warn("Error while updating playlist image: {}. Falling back to default image.", err.getMessage());
+                                            // Specify a default base64 image string here
+                                            String defaultImageBase64 = "default_base64_image_string"; // Replace with the actual base64 string
+                                            return this.updatePlaylistImage(loifyPlaylistId, defaultImageBase64);
+                                        })
+                                        .then(this.getAndLoifyAllTracksInPlaylist(playlistId) // STEP 3: Get loified tracks
+                                                .collectList() // Collect all loified tracks into a List
+                                                .flatMap(loifyedTracks -> {
+                                                    // STEP 4: Prepare the list of track URIs
+                                                    List<String> uris = loifyedTracks.stream()
+                                                            .map(t -> {
+                                                                try {
+                                                                    return t.tracks().items().get(0);
+                                                                } catch (Exception e) {
+                                                                    logger.warn("No track found - skipping item...");
+                                                                    return null;
+                                                                }
+                                                            })
+                                                            .map(t -> {
+                                                                try {
+                                                                    return "spotify:track:" + t.id(); // Construct URI
+                                                                } catch (Exception e) {
+                                                                    logger.warn("No track found - skipping item again...");
+                                                                    return null;
+                                                                }
+                                                            })
+                                                            .filter(t -> t != null)
+                                                            .collect(Collectors.toList());
 
-        // STEP 4: Add loify-ed tracks -> to (empty 🍃) playlist
-        List<String> uris = loifyedTracks
-                .stream()
-                .map((t) -> {
-                    try {
-                        return (TrackItemObjectDTO) t.tracks().items().get(0);
-                    } catch (Exception e) {
-                        System.out.println("No track found - skipping item...");
-                        return null;
-                    }
-                })
-                .map((t) -> {
-                    try {
-                        return "spotify:track:" + t.id();   // TODO: Add `uri` field to DTO and use that instead of appending here?
-                    } catch (Exception e) {
-                        System.out.println("No track found - skipping item again...");
-                        return null;
-                    }
-                })
-                .filter(t -> t != null)
-                .collect(Collectors.toList());
+                                                    // Prepare the request body for adding tracks
+                                                    AddTracksToPlaylistRequestDTO addTracksReqBody = new AddTracksToPlaylistRequestDTO(uris);
+                                                    logger.info("Adding loifyed tracks to new playlist ID: {}", loifyPlaylistId);
 
-        AddTracksRequestDTO addTracksReqBody = new AddTracksRequestDTO(uris);
-
-        System.out.println("HIIIIII: " + addTracksReqBody);
-        this.addTracksToPlaylist(loifyPlaylistId, addTracksReqBody).block();       // <- TODO: make the playlist dynamic (must come from above )
-
-        // STEP 5: Return the `href` url of the 🍃 playlist - so that users can view in Spotify
-        return response;
+                                                    // Add loified tracks to the new playlist
+                                                    return this.addTracksToPlaylistWithRetry(loifyPlaylistId, addTracksReqBody)
+                                                            .then(Mono.just(response)); // Return the response after adding tracks
+                                                }));
+                            });
+                });
     }
 
 
     public Mono<String> updatePlaylistImage(String playlistId, String base64Image) {
+        logger.info("Updating playlist image for playlist ID: {}", playlistId);
         return this.auth.webClient.put()
                 .uri("v1/playlists/" + playlistId + "/images")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(base64Image)
                 .retrieve()
-                .bodyToMono(String.class);
+                .bodyToMono(String.class)
+                .doOnSuccess(success -> logger.info("Successfully updated playlist image for playlist ID: {}", playlistId))
+                .doOnError(err -> logger.error("Error updating playlist image for playlist ID {}: {}", playlistId, err.getMessage()));
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // TODO: Make this a function: GENERIC + UTIL
+    // Retry logic for adding tracks with Retry-After support
+    private Mono<Void> addTracksToPlaylistWithRetry(String playlistId, AddTracksToPlaylistRequestDTO requestBody) {
+        return this.addTracksToPlaylist(playlistId, requestBody)
+                .retryWhen(Retry.from(companion -> companion.handle((retrySignal, sink) -> {
+                    Throwable failure = retrySignal.failure();
+                    if (failure instanceof WebClientResponseException) {
+                        WebClientResponseException ex = (WebClientResponseException) failure;
+                        if (ex.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS) {
+                            // Get the Retry-After header
+                            String retryAfterHeader = ex.getHeaders().getFirst("Retry-After");
+                            long retryAfterSeconds = retryAfterHeader != null ? Long.parseLong(retryAfterHeader) : 1;
+
+                            logger.warn("Received 429 Too Many Requests. Retrying after {} seconds.", retryAfterSeconds);
+
+                            // Delay before retrying
+                            sink.next(Duration.ofSeconds(retryAfterSeconds));
+                        } else {
+                            sink.error(failure); // Stop retrying for other HTTP errors
+                        }
+                    } else {
+                        sink.error(failure); // Stop retrying for non-HTTP errors
+                    }
+                }))).then();
     }
 }

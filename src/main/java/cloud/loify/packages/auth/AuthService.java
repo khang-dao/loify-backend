@@ -1,6 +1,8 @@
 package cloud.loify.packages.auth;
 
-import cloud.loify.dto.response.UserDetailsResponseDTO;
+import cloud.loify.packages.me.dto.GetUserResponseDTO;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
@@ -12,7 +14,6 @@ import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
-
 @Service
 public class AuthService {
 
@@ -21,18 +22,33 @@ public class AuthService {
     private final String baseUrl;
     public WebClient webClient;
 
-    public AuthService(WebClient.Builder webClientBuilder, OAuth2AuthorizedClientService authorizedClientService, @Value("${api.base.url}") String baseUrl) {
+    // Logger instance
+    private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
+
+    public AuthService(WebClient.Builder webClientBuilder, OAuth2AuthorizedClientService authorizedClientService,
+                       @Value("${api.base.url}") String baseUrl) {
         this.webClientBuilder = webClientBuilder;
         this.webClient = webClientBuilder.baseUrl(baseUrl).build();
         this.authorizedClientService = authorizedClientService;
         this.baseUrl = baseUrl;
     }
 
+    /**
+     * Handles the login process for the authenticated user.
+     *
+     * @param principal the authenticated OAuth2User.
+     */
     public void handleLogin(@AuthenticationPrincipal OAuth2User principal) {
         // Update all future request headers with Auth Token
         OAuth2AuthorizedClient client = this.authorizedClientService.loadAuthorizedClient("spotify", principal.getName());
+
+        if (client == null) {
+            logger.warn("No authorized client found for user: {}", principal.getName());
+            return; // or throw an exception if needed
+        }
+
         String accessToken = client.getAccessToken().getTokenValue();
-        String refreshToken = client.getRefreshToken().getTokenValue();
+        String refreshToken = client.getRefreshToken() != null ? client.getRefreshToken().getTokenValue() : null;
 
         this.webClient = this.webClientBuilder
                 .baseUrl(this.baseUrl)
@@ -43,18 +59,34 @@ public class AuthService {
                     return Mono.just(updatedRequest);
                 }))
                 .build();
-        System.out.println("AUTHENTICATED: Session Created");
+
+        logger.info("AUTHENTICATED: Session Created for user: {}", principal.getName());
+        logger.debug("Access Token: {}", accessToken);
+        if (refreshToken != null) {
+            logger.debug("Refresh Token: {}", refreshToken);
+        }
     }
 
+    /**
+     * Resets the WebClient to a non-authenticated version.
+     */
     public void resetWebClient() {
         this.webClient = null;
-        System.out.println("WebClient has been reset to non-authenticated version.");
+        logger.info("WebClient has been reset to non-authenticated version.");
     }
 
-    public Mono<UserDetailsResponseDTO> getUserProfile() {
+    /**
+     * Retrieves the user profile from the API.
+     *
+     * @return Mono containing the UserDetailsResponseDTO.
+     */
+    public Mono<GetUserResponseDTO> getUserProfile() {
+        logger.info("Retrieving user profile...");
         return this.webClient.get()
                 .uri("/v1/me")
                 .retrieve()
-                .bodyToMono(UserDetailsResponseDTO.class);
+                .bodyToMono(GetUserResponseDTO.class)
+                .doOnSuccess(userDetails -> logger.info("User profile retrieved successfully: {}", userDetails))
+                .doOnError(error -> logger.error("Error retrieving user profile: {}", error.getMessage()));
     }
 }

@@ -1,9 +1,11 @@
 package cloud.loify.packages.me;
 
-import cloud.loify.dto.CreatePlaylistRequestDTO;
-import cloud.loify.dto.CreatePlaylistResponseDTO;
-import cloud.loify.dto.PlaylistDTO;
+import cloud.loify.packages.playlist.dto.CreatePlaylistRequestDTO;
+import cloud.loify.packages.playlist.dto.CreatePlaylistResponseDTO;
+import cloud.loify.packages.me.dto.GetUserPlaylistsResponseDTO;
 import cloud.loify.packages.auth.AuthService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -13,19 +15,26 @@ public class MeService {
 
     private final AuthService auth;
 
+    // Logger instance
+    private static final Logger logger = LoggerFactory.getLogger(MeService.class);
+
     public MeService(AuthService auth) {
         this.auth = auth;
     }
 
     // Swap `PlaylistDTO` with `UserPlaylistResponseDTO`
-    public Mono<PlaylistDTO> getAllPlaylistsByCurrentUser() {
+    public Mono<GetUserPlaylistsResponseDTO> getAllPlaylistsByCurrentUser() {
+        logger.info("Retrieving all playlists for the current user.");
         return this.auth.webClient.get()
                 .uri("/v1/me/playlists")
                 .retrieve()
-                .bodyToMono(PlaylistDTO.class);
+                .bodyToMono(GetUserPlaylistsResponseDTO.class)
+                .doOnSuccess(playlists -> logger.info("Successfully retrieved playlists for the current user."))
+                .doOnError(err -> logger.error("Error retrieving playlists: {}", err.getMessage()));
     }
 
-    public Mono<CreatePlaylistResponseDTO> createPlaylist(CreatePlaylistRequestDTO requestBody) {
+    public Mono<CreatePlaylistResponseDTO> createPlaylistForCurrentUser(CreatePlaylistRequestDTO requestBody) {
+        logger.info("Creating a new playlist for the current user with request body: {}", requestBody);
         return this.auth.getUserProfile()
                 .map(user -> user.id())
                 .flatMap(userId -> this.auth.webClient.post()
@@ -34,6 +43,8 @@ public class MeService {
                         .bodyValue(requestBody)
                         .retrieve()
                         .bodyToMono(CreatePlaylistResponseDTO.class)
+                        .doOnSuccess(response -> logger.info("Successfully created playlist for user ID: {}", userId))
+                        .doOnError(err -> logger.error("Error creating playlist for user ID: {} - {}", userId, err.getMessage()))
                 );
     }
 
