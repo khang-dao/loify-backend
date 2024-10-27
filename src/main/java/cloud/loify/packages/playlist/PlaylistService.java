@@ -110,7 +110,7 @@ public class PlaylistService {
         CreatePlaylistRequestDTO createPlaylistReqBody = new CreatePlaylistRequestDTO(loifyPlaylistName, loifyPlaylistDescription, true, true);
 
         // TODO: Replace`this.createPlaylist("""""xyz"""")` with an actual way to get `this.userProfile.id()
-        CreatePlaylistResponseDTO response = this.me.createPlaylist(createPlaylistReqBody).block();
+        CreatePlaylistResponseDTO response = this.me.createPlaylistForCurrentUser(createPlaylistReqBody).block();
         String loifyPlaylistId = response.id();
 
         // STEP 2: Update (empty 🍃) playlist - image

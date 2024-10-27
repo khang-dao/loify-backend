@@ -11,10 +11,8 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import reactor.core.publisher.Mono;
-
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -22,6 +20,7 @@ public class AuthController {
 
     private final AuthService authService;
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
+
     @Value("${frontend.url}") private String frontendUrl;
 
     public AuthController(AuthService authService) {
@@ -29,7 +28,7 @@ public class AuthController {
     }
 
     // Check if the user is logged in
-    // TODO: remove /check
+    // TODO: remove /check endpoint
     @GetMapping("/session/check")
     public Mono<ResponseEntity<String>> getSessionStatus() {
         return authService.getUserProfile()
@@ -45,13 +44,13 @@ public class AuthController {
     }
 
     // Create a new session (login)
-    // TODO: change back to @POSTMapping
+    // TODO: change back to @PostMapping when implementing actual login logic
     @GetMapping("/session")
     public ResponseEntity<Void> createSession(@AuthenticationPrincipal OAuth2User principal, HttpServletResponse response) {
         try {
             if (principal == null) {
                 logger.warn("Attempted login with null principal");
-                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
             authService.handleLogin(principal);
             logger.info("User [{}] has successfully logged in", principal.getName());
@@ -63,7 +62,7 @@ public class AuthController {
 
         } catch (Exception e) {
             logger.error("Error during login process: {}", e.getMessage());
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -77,7 +76,7 @@ public class AuthController {
 
         } catch (Exception e) {
             logger.error("Error during logout process: {}", e.getMessage());
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }

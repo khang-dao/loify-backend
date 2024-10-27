@@ -25,7 +25,7 @@ public class MeService {
                 .bodyToMono(PlaylistDTO.class);
     }
 
-    public Mono<CreatePlaylistResponseDTO> createPlaylist(CreatePlaylistRequestDTO requestBody) {
+    public Mono<CreatePlaylistResponseDTO> createPlaylistForCurrentUser(CreatePlaylistRequestDTO requestBody) {
         return this.auth.getUserProfile()
                 .map(user -> user.id())
                 .flatMap(userId -> this.auth.webClient.post()

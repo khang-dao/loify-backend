@@ -2,7 +2,6 @@ package cloud.loify.packages.track;
 
 import cloud.loify.dto.response.TrackSearchResponseDTO;
 import cloud.loify.packages.auth.AuthService;
-import org.json.JSONException;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
