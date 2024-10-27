@@ -1,6 +1,6 @@
 package cloud.loify.packages.auth;
 
-import cloud.loify.dto.response.UserDetailsResponseDTO;
+import cloud.loify.packages.me.dto.GetUserResponseDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -80,12 +80,12 @@ public class AuthService {
      *
      * @return Mono containing the UserDetailsResponseDTO.
      */
-    public Mono<UserDetailsResponseDTO> getUserProfile() {
+    public Mono<GetUserResponseDTO> getUserProfile() {
         logger.info("Retrieving user profile...");
         return this.webClient.get()
                 .uri("/v1/me")
                 .retrieve()
-                .bodyToMono(UserDetailsResponseDTO.class)
+                .bodyToMono(GetUserResponseDTO.class)
                 .doOnSuccess(userDetails -> logger.info("User profile retrieved successfully: {}", userDetails))
                 .doOnError(error -> logger.error("Error retrieving user profile: {}", error.getMessage()));
     }

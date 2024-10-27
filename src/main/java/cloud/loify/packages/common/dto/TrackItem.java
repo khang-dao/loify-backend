@@ -1,4 +1,4 @@
-package cloud.loify.dto.track;
+package cloud.loify.packages.common.dto;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;

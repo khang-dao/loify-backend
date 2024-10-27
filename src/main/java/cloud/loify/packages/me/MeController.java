@@ -1,8 +1,8 @@
 package cloud.loify.packages.me;
 
-import cloud.loify.dto.CreatePlaylistRequestDTO;
-import cloud.loify.dto.CreatePlaylistResponseDTO;
-import cloud.loify.dto.PlaylistDTO;
+import cloud.loify.packages.playlist.dto.CreatePlaylistRequestDTO;
+import cloud.loify.packages.playlist.dto.CreatePlaylistResponseDTO;
+import cloud.loify.packages.me.dto.GetUserPlaylistsResponseDTO;
 import cloud.loify.packages.me.exceptions.InvalidRequestException;
 import cloud.loify.packages.me.exceptions.PlaylistCreationException;
 import org.slf4j.Logger;
@@ -33,7 +33,7 @@ public class MeController {
      * @throws ResponseStatusException if an error occurs while retrieving playlists.
      */
     @GetMapping("/playlists")
-    public Mono<PlaylistDTO> getPlaylists() {
+    public Mono<GetUserPlaylistsResponseDTO> getPlaylists() {
         logger.info("Request to retrieve all playlists for the current user.");
         return meService.getAllPlaylistsByCurrentUser()
                 .doOnSuccess(playlists -> logger.info("Successfully retrieved playlists for the current user."))

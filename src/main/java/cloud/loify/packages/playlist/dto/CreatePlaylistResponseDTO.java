@@ -1,7 +1,7 @@
-package cloud.loify.dto;
+package cloud.loify.packages.playlist.dto;
 
 
-import cloud.loify.dto.common.CoverImageDTO;
+import cloud.loify.packages.common.dto.CoverImageDTO;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;

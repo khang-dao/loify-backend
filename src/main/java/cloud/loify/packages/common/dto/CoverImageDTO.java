@@ -1,3 +1,3 @@
-package cloud.loify.dto.common;
+package cloud.loify.packages.common.dto;
 
 public record CoverImageDTO(String url) {}

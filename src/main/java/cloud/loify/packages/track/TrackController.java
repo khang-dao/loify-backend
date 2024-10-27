@@ -1,6 +1,6 @@
 package cloud.loify.packages.track;
 
-import cloud.loify.dto.response.TrackSearchResponseDTO;
+import cloud.loify.packages.track.dto.SearchTrackResponseDTO;
 import cloud.loify.packages.track.exceptions.TrackNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +32,7 @@ public class TrackController {
      * @throws ResponseStatusException if the track is not found or an error occurs during the search.
      */
     @GetMapping // Example URL: http://loify.com/api/v1/tracks?trackName=hotline+bling
-    public Mono<ResponseEntity<TrackSearchResponseDTO>> getFirstTrackByTrackName(@RequestParam String trackName) {
+    public Mono<ResponseEntity<SearchTrackResponseDTO>> getFirstTrackByTrackName(@RequestParam String trackName) {
         // Validate the input parameter
         if (trackName == null || trackName.trim().isEmpty()) {
             logger.warn("Received empty trackName parameter.");

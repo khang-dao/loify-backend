@@ -1,6 +1,6 @@
 package cloud.loify.packages.track;
 
-import cloud.loify.dto.response.TrackSearchResponseDTO;
+import cloud.loify.packages.track.dto.SearchTrackResponseDTO;
 import cloud.loify.packages.auth.AuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,13 +24,13 @@ public class TrackService {
      * @param trackName the name of the track to search for.
      * @return a Mono containing the TrackSearchResponseDTO with the track details.
      */
-    public Mono<TrackSearchResponseDTO> getFirstTrackByTrackName(String trackName) {
+    public Mono<SearchTrackResponseDTO> getFirstTrackByTrackName(String trackName) {
         logger.info("Searching for track with name: {}", trackName);
 
         return this.auth.webClient.get()
                 .uri("/v1/search?q=track:" + trackName + "&type=track&limit=1")
                 .retrieve()
-                .bodyToMono(TrackSearchResponseDTO.class)
+                .bodyToMono(SearchTrackResponseDTO.class)
                 .doOnSuccess(track -> logger.info("Track found: {}", track))
                 .doOnError(err -> logger.error("Error retrieving track: {}", err.getMessage()))
                 .onErrorResume(err -> {

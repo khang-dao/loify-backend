@@ -1,8 +1,8 @@
 package cloud.loify.packages.me;
 
-import cloud.loify.dto.CreatePlaylistRequestDTO;
-import cloud.loify.dto.CreatePlaylistResponseDTO;
-import cloud.loify.dto.PlaylistDTO;
+import cloud.loify.packages.playlist.dto.CreatePlaylistRequestDTO;
+import cloud.loify.packages.playlist.dto.CreatePlaylistResponseDTO;
+import cloud.loify.packages.me.dto.GetUserPlaylistsResponseDTO;
 import cloud.loify.packages.auth.AuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,12 +23,12 @@ public class MeService {
     }
 
     // Swap `PlaylistDTO` with `UserPlaylistResponseDTO`
-    public Mono<PlaylistDTO> getAllPlaylistsByCurrentUser() {
+    public Mono<GetUserPlaylistsResponseDTO> getAllPlaylistsByCurrentUser() {
         logger.info("Retrieving all playlists for the current user.");
         return this.auth.webClient.get()
                 .uri("/v1/me/playlists")
                 .retrieve()
-                .bodyToMono(PlaylistDTO.class)
+                .bodyToMono(GetUserPlaylistsResponseDTO.class)
                 .doOnSuccess(playlists -> logger.info("Successfully retrieved playlists for the current user."))
                 .doOnError(err -> logger.error("Error retrieving playlists: {}", err.getMessage()));
     }
