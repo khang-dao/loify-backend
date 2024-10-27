@@ -1,13 +1,12 @@
 package cloud.loify.packages.playlist;
 
-import cloud.loify.packages.track.dto.AddTracksRequestDTO;
 import cloud.loify.packages.playlist.dto.CreatePlaylistRequestDTO;
 import cloud.loify.packages.playlist.dto.CreatePlaylistResponseDTO;
+import cloud.loify.packages.playlist.dto.AddTracksToPlaylistRequestDTO;
 import cloud.loify.packages.playlist.dto.GetPlaylistResponseDTO;
 import cloud.loify.packages.track.dto.SearchTrackResponseDTO;
-import cloud.loify.packages.common.dto.TrackItemDTO;
-import cloud.loify.packages.common.dto.TrackItemObjectDTO;
-import cloud.loify.packages.track.dto.GetTracksResponseDTO;
+import cloud.loify.packages.track.dto.TrackDetailsFromPlaylistDTO;
+import cloud.loify.packages.track.dto.GetTracksFromPlaylistResponseDTO;
 import cloud.loify.packages.auth.AuthService;
 import cloud.loify.packages.me.MeService;
 import cloud.loify.packages.track.TrackService;
@@ -16,13 +15,18 @@ import cloud.loify.packages.utils.StringUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
+
+import java.time.Duration;
+import java.util.List;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -53,18 +57,18 @@ public class PlaylistService {
     }
 
     // TODO: This MAY be able to be removed - does it return BASICALLY the same content as `getPlaylistById()`
-    public Mono<GetTracksResponseDTO> getAllTracksInPlaylist(String playlistId) {
+    public Mono<GetTracksFromPlaylistResponseDTO> getAllTracksInPlaylist(String playlistId) {
         logger.info("Retrieving all tracks for playlist ID: {}", playlistId);
         return this.auth.webClient.get()
                 .uri("/v1/playlists/" + playlistId + "/tracks")
                 .retrieve()
-                .bodyToMono(GetTracksResponseDTO.class)
+                .bodyToMono(GetTracksFromPlaylistResponseDTO.class)
                 .doOnSuccess(tracks -> logger.info("Successfully retrieved tracks for playlist ID: {}", playlistId))
                 .doOnError(err -> logger.error("Error retrieving tracks for playlist ID {}: {}", playlistId, err.getMessage()));
     }
 
     // TODO: Fix - "spotify:track:54eCPwH8hZqAJBMlZ9YEyJ" --> "54eCPwH8hZqAJBMlZ9YEyJ" (if deemed possible)
-    public Mono<String> addTracksToPlaylist(String playlistId, AddTracksRequestDTO requestBody) {
+    public Mono<String> addTracksToPlaylist(String playlistId, AddTracksToPlaylistRequestDTO requestBody) {
         logger.info("Adding tracks to playlist ID: {} with request body: {}", playlistId, requestBody);
         return this.auth.webClient.post()
                 .uri("v1/playlists/" + playlistId + "/tracks")
@@ -73,7 +77,7 @@ public class PlaylistService {
                 .retrieve()
                 .bodyToMono(String.class)  // NOTE: String = `snapshot_id`
                 .doOnSuccess(snapshotId -> logger.info("Successfully added tracks to playlist ID: {}. Snapshot ID: {}", playlistId, snapshotId))
-                .doOnError(err -> logger.error("Error adding tracks to playlist ID {}: {}", playlistId, err.getMessage()));
+                .doOnError(err -> logger.error("Error adding tracks to playlist ID [{}]: {}", playlistId, err.getMessage()));
     }
 
     public Flux<SearchTrackResponseDTO> getAndLoifyAllTracksInPlaylist(String playlistId) {
@@ -87,7 +91,7 @@ public class PlaylistService {
                     }
 
                     return Flux.fromIterable(tracks.items())
-                            .map(t -> (TrackItemDTO) t)
+                            .map(t -> (TrackDetailsFromPlaylistDTO) t) // TODO: might be able to delete
                             .map(t -> StringUtils.loifyTrackName(t.track().name()))
                             .flatMap(this.track::getFirstTrackByTrackName);
                 })
@@ -144,7 +148,7 @@ public class PlaylistService {
                                                     List<String> uris = loifyedTracks.stream()
                                                             .map(t -> {
                                                                 try {
-                                                                    return (TrackItemObjectDTO) t.tracks().items().get(0);
+                                                                    return t.tracks().items().get(0);
                                                                 } catch (Exception e) {
                                                                     logger.warn("No track found - skipping item...");
                                                                     return null;
@@ -162,11 +166,11 @@ public class PlaylistService {
                                                             .collect(Collectors.toList());
 
                                                     // Prepare the request body for adding tracks
-                                                    AddTracksRequestDTO addTracksReqBody = new AddTracksRequestDTO(uris);
-                                                    logger.info("Adding loified tracks to new playlist ID: {}", loifyPlaylistId);
+                                                    AddTracksToPlaylistRequestDTO addTracksReqBody = new AddTracksToPlaylistRequestDTO(uris);
+                                                    logger.info("Adding loifyed tracks to new playlist ID: {}", loifyPlaylistId);
 
                                                     // Add loified tracks to the new playlist
-                                                    return this.addTracksToPlaylist(loifyPlaylistId, addTracksReqBody)
+                                                    return this.addTracksToPlaylistWithRetry(loifyPlaylistId, addTracksReqBody)
                                                             .then(Mono.just(response)); // Return the response after adding tracks
                                                 }));
                             });
@@ -184,5 +188,48 @@ public class PlaylistService {
                 .bodyToMono(String.class)
                 .doOnSuccess(success -> logger.info("Successfully updated playlist image for playlist ID: {}", playlistId))
                 .doOnError(err -> logger.error("Error updating playlist image for playlist ID {}: {}", playlistId, err.getMessage()));
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // TODO: Make this a function: GENERIC + UTIL
+    // Retry logic for adding tracks with Retry-After support
+    private Mono<Void> addTracksToPlaylistWithRetry(String playlistId, AddTracksToPlaylistRequestDTO requestBody) {
+        return this.addTracksToPlaylist(playlistId, requestBody)
+                .retryWhen(Retry.from(companion -> companion.handle((retrySignal, sink) -> {
+                    Throwable failure = retrySignal.failure();
+                    if (failure instanceof WebClientResponseException) {
+                        WebClientResponseException ex = (WebClientResponseException) failure;
+                        if (ex.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS) {
+                            // Get the Retry-After header
+                            String retryAfterHeader = ex.getHeaders().getFirst("Retry-After");
+                            long retryAfterSeconds = retryAfterHeader != null ? Long.parseLong(retryAfterHeader) : 1;
+
+                            logger.warn("Received 429 Too Many Requests. Retrying after {} seconds.", retryAfterSeconds);
+
+                            // Delay before retrying
+                            sink.next(Duration.ofSeconds(retryAfterSeconds));
+                        } else {
+                            sink.error(failure); // Stop retrying for other HTTP errors
+                        }
+                    } else {
+                        sink.error(failure); // Stop retrying for non-HTTP errors
+                    }
+                }))).then();
     }
 }

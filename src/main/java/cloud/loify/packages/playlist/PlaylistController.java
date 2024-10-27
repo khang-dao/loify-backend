@@ -1,10 +1,10 @@
 package cloud.loify.packages.playlist;
 
-import cloud.loify.packages.track.dto.AddTracksRequestDTO;
+import cloud.loify.packages.playlist.dto.AddTracksToPlaylistRequestDTO;
 import cloud.loify.packages.playlist.dto.CreatePlaylistResponseDTO;
 import cloud.loify.packages.playlist.dto.GetPlaylistResponseDTO;
 import cloud.loify.packages.track.dto.SearchTrackResponseDTO;
-import cloud.loify.packages.track.dto.GetTracksResponseDTO;
+import cloud.loify.packages.track.dto.GetTracksFromPlaylistResponseDTO;
 import cloud.loify.packages.playlist.exceptions.PlaylistNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +60,7 @@ public class PlaylistController {
      * @throws ResponseStatusException if the playlist is not found.
      */
     @GetMapping("/{playlistId}/tracks")
-    public Mono<ResponseEntity<GetTracksResponseDTO>> getAllTracksInPlaylist(@PathVariable String playlistId) {
+    public Mono<ResponseEntity<GetTracksFromPlaylistResponseDTO>> getAllTracksInPlaylist(@PathVariable String playlistId) {
         logger.info("Request to retrieve all tracks in playlist with ID: {}", playlistId);
         return playlistService.getAllTracksInPlaylist(playlistId)
                 .map(tracks -> {
@@ -85,7 +85,7 @@ public class PlaylistController {
      */
     @PostMapping("/{playlistId}/tracks")
     public Mono<ResponseEntity<String>> addTracksToPlaylist(@PathVariable String playlistId,
-                                                            @RequestBody AddTracksRequestDTO requestBody) {
+                                                            @RequestBody AddTracksToPlaylistRequestDTO requestBody) {
         logger.info("Request to add tracks to playlist with ID: {}", playlistId);
         return playlistService.addTracksToPlaylist(playlistId, requestBody)
                 .map(updatedPlaylistId -> {
