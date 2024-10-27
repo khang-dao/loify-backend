@@ -45,17 +45,6 @@ public class SpotifyService {
     private static final String BASE_URL = "https://api.spotify.com";
     private static final String TOKEN_URL = "https://accounts.spotify.com/api/token";
 
-    @Value("${spotify.client_id}")
-    private String clientId;
-    @Value("${spotify.client_secret}")
-    private String clientSecret;
-    @Value("${spotify.grant_type}")
-    private String grantType;
-    @Value("${spotify.scopes}")
-    private String scopes;
-    @Value("${spotify.redirect_uri}")
-    private String redirectUri;
-
     private WebClient webClient;
     private UserDetailsResponseDTO userProfile;
 
@@ -89,7 +78,6 @@ public class SpotifyService {
         OAuth2AuthorizedClient client = this.authorizedClientService.loadAuthorizedClient("spotify", principal.getName());
         String accessToken = client.getAccessToken().getTokenValue();
         String refreshToken = client.getRefreshToken().getTokenValue();
-
 
         this.webClient = this.webClientBuilder
                 .filter(ExchangeFilterFunction.ofRequestProcessor(request -> {
