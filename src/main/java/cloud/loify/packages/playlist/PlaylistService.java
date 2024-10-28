@@ -10,6 +10,7 @@ import cloud.loify.packages.track.dto.GetTracksFromPlaylistResponseDTO;
 import cloud.loify.packages.auth.AuthService;
 import cloud.loify.packages.me.MeService;
 import cloud.loify.packages.track.TrackService;
+import cloud.loify.packages.utils.ApiUtils;
 import cloud.loify.packages.utils.ImageUtils;
 import cloud.loify.packages.utils.StringUtils;
 
@@ -170,7 +171,7 @@ public class PlaylistService {
                                                     logger.info("Adding loifyed tracks to new playlist ID: {}", loifyPlaylistId);
 
                                                     // Add loified tracks to the new playlist
-                                                    return this.addTracksToPlaylistWithRetry(loifyPlaylistId, addTracksReqBody)
+                                                    return ApiUtils.retryWithDelay(() -> this.addTracksToPlaylist(loifyPlaylistId, addTracksReqBody))
                                                             .then(Mono.just(response)); // Return the response after adding tracks
                                                 }));
                             });
@@ -208,21 +209,17 @@ public class PlaylistService {
 
 
     // TODO: Make this a function: GENERIC + UTIL
-    // Retry logic for adding tracks with Retry-After support
     private Mono<Void> addTracksToPlaylistWithRetry(String playlistId, AddTracksToPlaylistRequestDTO requestBody) {
         return this.addTracksToPlaylist(playlistId, requestBody)
                 .retryWhen(Retry.from(companion -> companion.handle((retrySignal, sink) -> {
                     Throwable failure = retrySignal.failure();
                     if (failure instanceof WebClientResponseException) {
-                        WebClientResponseException ex = (WebClientResponseException) failure;
-                        if (ex.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS) {
-                            // Get the Retry-After header
-                            String retryAfterHeader = ex.getHeaders().getFirst("Retry-After");
+                        WebClientResponseException exception = (WebClientResponseException) failure;
+                        if (exception.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS) {
+                            String retryAfterHeader = exception.getHeaders().getFirst("Retry-After");
                             long retryAfterSeconds = retryAfterHeader != null ? Long.parseLong(retryAfterHeader) : 1;
 
                             logger.warn("Received 429 Too Many Requests. Retrying after {} seconds.", retryAfterSeconds);
-
-                            // Delay before retrying
                             sink.next(Duration.ofSeconds(retryAfterSeconds));
                         } else {
                             sink.error(failure); // Stop retrying for other HTTP errors
