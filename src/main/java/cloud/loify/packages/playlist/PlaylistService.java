@@ -190,43 +190,4 @@ public class PlaylistService {
                 .doOnSuccess(success -> logger.info("Successfully updated playlist image for playlist ID: {}", playlistId))
                 .doOnError(err -> logger.error("Error updating playlist image for playlist ID {}: {}", playlistId, err.getMessage()));
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    // TODO: Make this a function: GENERIC + UTIL
-    private Mono<Void> addTracksToPlaylistWithRetry(String playlistId, AddTracksToPlaylistRequestDTO requestBody) {
-        return this.addTracksToPlaylist(playlistId, requestBody)
-                .retryWhen(Retry.from(companion -> companion.handle((retrySignal, sink) -> {
-                    Throwable failure = retrySignal.failure();
-                    if (failure instanceof WebClientResponseException) {
-                        WebClientResponseException exception = (WebClientResponseException) failure;
-                        if (exception.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS) {
-                            String retryAfterHeader = exception.getHeaders().getFirst("Retry-After");
-                            long retryAfterSeconds = retryAfterHeader != null ? Long.parseLong(retryAfterHeader) : 1;
-
-                            logger.warn("Received 429 Too Many Requests. Retrying after {} seconds.", retryAfterSeconds);
-                            sink.next(Duration.ofSeconds(retryAfterSeconds));
-                        } else {
-                            sink.error(failure); // Stop retrying for other HTTP errors
-                        }
-                    } else {
-                        sink.error(failure); // Stop retrying for non-HTTP errors
-                    }
-                }))).then();
-    }
 }

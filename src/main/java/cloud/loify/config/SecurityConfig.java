@@ -37,14 +37,15 @@ public class SecurityConfig {
                         .requestMatchers("/api/spotify/logout").permitAll()    // Allow access to logout route
                         .requestMatchers("/api/spotify/logout/webclient").permitAll()    // Allow access to logout route
 
-                        // TODO: Delete these 4
-                        .requestMatchers("/api/v1/home/").permitAll()
+                        // TODO: Delete these
+                        .requestMatchers("/api/v1/home").permitAll()
                         .requestMatchers("/api/v1/tracks").permitAll()
                         .requestMatchers("/api/v1/playlists/{playlistId}").permitAll()
                         .requestMatchers("/api/v1/playlists/{username}").permitAll()
                         .requestMatchers("/api/v1/playlists/{playlistId}/tracks").permitAll()
                         .requestMatchers("/api/v1/playlists/{playlistId}/loify").permitAll()
                         .requestMatchers("/api/v1/me/playlists").permitAll()
+                        .requestMatchers("/api/v1/me/playlists/loify").permitAll()
 
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()    // Allow preflight OPTIONS requests
                         .anyRequest().authenticated() // Require authentication for all other requests

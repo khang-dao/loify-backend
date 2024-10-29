@@ -8,7 +8,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.time.Duration;
 
 @Service
 public class MeService {
@@ -46,6 +49,32 @@ public class MeService {
                         .doOnSuccess(response -> logger.info("Successfully created playlist for user ID: {}", userId))
                         .doOnError(err -> logger.error("Error creating playlist for user ID: {} - {}", userId, err.getMessage()))
                 );
+    }
+
+    public Mono<Void> deletePlaylistById(String playlistId) {
+        logger.info("Deleting playlist with ID: {}", playlistId);
+        return this.auth.webClient.delete()
+                .uri("/v1/playlists/{playlistId}/followers", playlistId) // Spotify’s delete endpoint for playlists
+                .retrieve()
+                .bodyToMono(Void.class)
+                .doOnSuccess(v -> logger.info("Deleted playlist with ID: {}", playlistId))
+                .doOnError(err -> logger.error("Error deleting playlist with ID {}: {}", playlistId, err.getMessage()));
+    }
+
+
+    public Mono<Void> deleteAllLoifyPlaylists() {
+        logger.info("Deleting all playlists with 'loify' in the name.");
+        return getAllPlaylistsByCurrentUser()
+                .flatMapMany(response -> Flux.fromIterable(response.items()))
+                .filter(playlist -> playlist.name().toLowerCase().contains("loify"))
+                .map(playlist -> playlist.id())
+                .collectList()
+                .flatMapMany(Flux::fromIterable)
+                .delayElements(Duration.ofMillis(200))  // Necessary to avoid 502 Bad Gateway error
+                .flatMap(this::deletePlaylistById)
+                .then()
+                .doOnSuccess(v -> logger.info("Successfully deleted all playlists with 'loify' in the name."))
+                .doOnError(err -> logger.error("Error deleting playlists: {}", err.getMessage()));
     }
 
 }
