@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/home")
 public class HomeController {
 
-    @GetMapping("/")
+    @GetMapping
     public String home() {
         return "Welcome to the Loify API! Visit the docs for more information :)";
     }
