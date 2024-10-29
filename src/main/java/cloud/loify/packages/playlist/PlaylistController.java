@@ -6,6 +6,7 @@ import cloud.loify.packages.playlist.dto.GetPlaylistResponseDTO;
 import cloud.loify.packages.track.dto.SearchTrackResponseDTO;
 import cloud.loify.packages.track.dto.GetTracksFromPlaylistResponseDTO;
 import cloud.loify.packages.playlist.exceptions.PlaylistNotFoundException;
+import org.apache.coyote.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -110,9 +111,9 @@ public class PlaylistController {
      * @throws ResponseStatusException if the playlist is not found.
      */
     @GetMapping("/{playlistId}/loify")
-    public Mono<ResponseEntity<Flux<SearchTrackResponseDTO>>> getAndLoifyAllTracksInPlaylist(@PathVariable String playlistId) {
+    public Mono<ResponseEntity<Flux<SearchTrackResponseDTO>>> getAndLoifyAllTracksInPlaylist(@PathVariable String playlistId, @RequestParam String genre) {
         logger.info("Request to loify all tracks in playlist with ID: {}", playlistId);
-        return playlistService.getAndLoifyAllTracksInPlaylist(playlistId)
+        return playlistService.getAndLoifyAllTracksInPlaylist(playlistId, genre)
                 .collectList()
                 .map(loifiedTracks -> {
                     logger.info("Successfully loified tracks for playlist: {}", playlistId);
@@ -133,7 +134,7 @@ public class PlaylistController {
      * @throws ResponseStatusException if an error occurs during the operation.
      */
     @PostMapping("/{playlistId}/loify")
-    public Mono<CreatePlaylistResponseDTO> createLoifyedPlaylistAndAddLoifyedTracks(@PathVariable String playlistId) {
-        return playlistService.createLoifyedPlaylistAndAddLoifyedTracks(playlistId);
+    public Mono<CreatePlaylistResponseDTO> createLoifyedPlaylistAndAddLoifyedTracks(@PathVariable String playlistId, @RequestParam String genre) {
+        return playlistService.createLoifyedPlaylistAndAddLoifyedTracks(playlistId, genre);
     }
 }
