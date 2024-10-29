@@ -16,15 +16,11 @@ import cloud.loify.packages.utils.StringUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.util.retry.Retry;
 
-import java.time.Duration;
 import java.util.List;
 
 import java.io.IOException;
@@ -81,7 +77,7 @@ public class PlaylistService {
                 .doOnError(err -> logger.error("Error adding tracks to playlist ID [{}]: {}", playlistId, err.getMessage()));
     }
 
-    public Flux<SearchTrackResponseDTO> getAndLoifyAllTracksInPlaylist(String playlistId) {
+    public Flux<SearchTrackResponseDTO> getAndLoifyAllTracksInPlaylist(String playlistId, String genre) {
         logger.info("Getting all tracks in playlist ID: {}", playlistId);
 
         return this.getAllTracksInPlaylist(playlistId)
@@ -93,7 +89,7 @@ public class PlaylistService {
 
                     return Flux.fromIterable(tracks.items())
                             .map(t -> (TrackDetailsFromPlaylistDTO) t) // TODO: might be able to delete
-                            .map(t -> StringUtils.loifyTrackName(t.track().name()))
+                            .map(t -> StringUtils.customizeTrackName(t.track().name(), genre))
                             .flatMap(this.track::getFirstTrackByTrackName);
                 })
                 .doOnComplete(() -> logger.info("Successfully loified all tracks in playlist ID: {}", playlistId))
@@ -108,15 +104,15 @@ public class PlaylistService {
     // TODO: Make this atomic - because sometimes the playlist is created, but the songs aren't added
     // TODO: ^ need to make it so that if one fails, then it's as if the method was never called
     // TODO: ^ (might involve deleting the playlist if the transaction fails)
-    public Mono<CreatePlaylistResponseDTO> createLoifyedPlaylistAndAddLoifyedTracks(String playlistId) {
+    public Mono<CreatePlaylistResponseDTO> createLoifyedPlaylistAndAddLoifyedTracks(String playlistId, String genre) {
         // STEP 0: Get current playlist details
         logger.info("Creating loified playlist and adding loified tracks for playlist ID: {}", playlistId);
 
         return this.getPlaylistById(playlistId)  // Get the current playlist details reactively
                 .flatMap(currentPlaylist -> {
                     String currentPlaylistName = currentPlaylist.name();
-                    String loifyPlaylistName = StringUtils.loifyPlaylistName(currentPlaylistName);
-                    String loifyPlaylistDescription = StringUtils.loifyPlaylistDescription(currentPlaylistName);
+                    String loifyPlaylistName = StringUtils.customizePlaylistName(currentPlaylistName, genre);
+                    String loifyPlaylistDescription = StringUtils.customizePlaylistDescription(currentPlaylistName, genre);
 
                     // Create the request body for the new playlist
                     CreatePlaylistRequestDTO createPlaylistReqBody = new CreatePlaylistRequestDTO(loifyPlaylistName, loifyPlaylistDescription, true, true);
@@ -142,7 +138,7 @@ public class PlaylistService {
                                             String defaultImageBase64 = "default_base64_image_string"; // Replace with the actual base64 string
                                             return this.updatePlaylistImage(loifyPlaylistId, defaultImageBase64);
                                         })
-                                        .then(this.getAndLoifyAllTracksInPlaylist(playlistId) // STEP 3: Get loified tracks
+                                        .then(this.getAndLoifyAllTracksInPlaylist(playlistId, genre) // STEP 3: Get loified tracks
                                                 .collectList() // Collect all loified tracks into a List
                                                 .flatMap(loifyedTracks -> {
                                                     // STEP 4: Prepare the list of track URIs

@@ -94,10 +94,14 @@ public class MeController {
     }
 
 
+    /**
+     * Deletes all playlists with "loify" in the name for the current user.
+     *
+     * @return Mono<Void> upon completion, with status indicating success or error.
+     */
     @DeleteMapping("/playlists/loify")
     public Mono<Void> deleteAllLoifyedPlaylists() {
         logger.info("Request to delete all playlists with 'loify' in the name.");
-//        return meService.deletePlaylistById("67sCjnh3Ql9uqwAPpBhYzP");
 
         return meService.deleteAllLoifyPlaylists()
                 .then(Mono.just(ResponseEntity.ok("Successfully deleted all playlists with 'loify' in the name.")))
