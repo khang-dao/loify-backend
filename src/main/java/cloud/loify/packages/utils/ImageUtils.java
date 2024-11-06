@@ -69,10 +69,10 @@ public class ImageUtils {
         int newHeight;
 
         if (originalWidth > originalHeight) {
-            newWidth = Math.min(originalWidth, 200);
+            newWidth = Math.min(originalWidth, 175);
             newHeight = (int) ((double) originalHeight * newWidth / originalWidth);
         } else {
-            newHeight = Math.min(originalHeight, 200);
+            newHeight = Math.min(originalHeight, 175);
             newWidth = (int) ((double) originalWidth * newHeight / originalHeight);
         }
 
