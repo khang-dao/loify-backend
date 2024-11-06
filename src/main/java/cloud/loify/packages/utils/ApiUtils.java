@@ -10,7 +10,7 @@ import java.util.function.Supplier;
 public class ApiUtils {
 
     /**
-     * Generic utility to retry a Mono operation on 429 error using the Retry-After header.
+     * Utility method to retry a Mono operation on 429 error using the Retry-After header.
      *
      * @param operation The Mono operation to execute with retry support.
      * @param <T>       The type of response the Mono will emit.
