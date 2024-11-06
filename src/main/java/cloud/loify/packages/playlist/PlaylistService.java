@@ -135,7 +135,7 @@ public class PlaylistService {
                                         .onErrorResume(err -> {
                                             logger.warn("Error while updating playlist image: {}. Falling back to default image.", err.getMessage());
                                             // Specify a default base64 image string here
-                                            String defaultImageBase64 = "default_base64_image_string"; // Replace with the actual base64 string
+                                            String defaultImageBase64 = "default_base64_image_string"; // TODO: Replace with the actual base64 string
                                             return this.updatePlaylistImage(loifyPlaylistId, defaultImageBase64);
                                         })
                                         .then(this.getAndLoifyAllTracksInPlaylist(playlistId, genre) // STEP 3: Get loified tracks
@@ -167,8 +167,7 @@ public class PlaylistService {
                                                     logger.info("Adding loifyed tracks to new playlist ID: {}", loifyPlaylistId);
 
                                                     // Add loified tracks to the new playlist
-                                                    return ApiUtils.retryWithDelay(() -> this.addTracksToPlaylist(loifyPlaylistId, addTracksReqBody))
-                                                            .then(Mono.just(response)); // Return the response after adding tracks
+                                                    return this.addTracksToPlaylist(loifyPlaylistId, addTracksReqBody).then(Mono.just(response)); // Return the response after adding tracks
                                                 }));
                             });
                 });
@@ -177,6 +176,7 @@ public class PlaylistService {
 
     public Mono<String> updatePlaylistImage(String playlistId, String base64Image) {
         logger.info("Updating playlist image for playlist ID: {}", playlistId);
+
         return this.auth.webClient.put()
                 .uri("v1/playlists/" + playlistId + "/images")
                 .contentType(MediaType.APPLICATION_JSON)
