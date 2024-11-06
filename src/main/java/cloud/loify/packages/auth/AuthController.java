@@ -8,10 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 /**
@@ -86,13 +83,13 @@ public class AuthController {
      * @return ResponseEntity<Void> indicating the result of the logout attempt.
      *         Returns 204 NO CONTENT if successful; 500 INTERNAL_SERVER_ERROR if an exception occurs.
      */
-    @DeleteMapping("/session")
-    public ResponseEntity<Void> deleteSession() {
+    @GetMapping("/session/logout")
+    public ResponseEntity<Void> deleteSession(HttpServletResponse response) {
         try {
             authService.resetWebClient();
             logger.info("User session invalidated successfully");
-            return ResponseEntity.noContent().build();
-
+            response.setHeader("Location", "http://localhost:3000");
+            return ResponseEntity.status(HttpStatus.FOUND).build(); // 302 Redirect
         } catch (Exception e) {
             logger.error("Error during logout process: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
