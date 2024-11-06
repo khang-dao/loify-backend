@@ -93,6 +93,24 @@ public class MeController {
         return Mono.just(request);
     }
 
+    /**
+     * Deletes a Loify playlist by ID.
+     *
+     * @param playlistId The ID of the playlist to delete.
+     * @return Mono<Void> upon completion, indicating success or error.
+     */
+    @DeleteMapping("/playlists/{playlistId}")
+    public Mono<ResponseEntity<String>> deletePlaylist(@PathVariable String playlistId) {
+        logger.info("Request to delete playlist: {}", playlistId);
+
+        return meService.deletePlaylistById(playlistId)
+                .then(Mono.just(ResponseEntity.ok("Successfully deleted playlist with ID: " + playlistId)))
+                .switchIfEmpty(Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Playlist with ID " + playlistId + " not found or does not contain 'loify'.")))
+                .onErrorResume(e -> {
+                    logger.error("An error occurred during playlist deletion: {}", e.getMessage(), e);
+                    return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to delete playlist due to an internal error."));
+                });
+    }
 
     /**
      * Deletes all playlists with "loify" in the name for the current user.
