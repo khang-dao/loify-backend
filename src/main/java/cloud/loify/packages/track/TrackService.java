@@ -2,7 +2,6 @@ package cloud.loify.packages.track;
 
 import cloud.loify.packages.track.dto.SearchTrackResponseDTO;
 import cloud.loify.packages.auth.AuthService;
-import cloud.loify.packages.utils.ApiUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -28,17 +27,22 @@ public class TrackService {
     public Mono<SearchTrackResponseDTO> getFirstTrackByTrackName(String trackName) {
         logger.info("Searching for track with name: {}", trackName);
 
-        return ApiUtils.retryWithDelay(() ->
-                this.auth.webClient.get()
-                        .uri("/v1/search?q=track:" + trackName + "&type=track&limit=1")
-                        .retrieve()
-                        .bodyToMono(SearchTrackResponseDTO.class)
-                        .doOnSuccess(track -> logger.info("Track found: {}", track))
-                        .doOnError(err -> logger.error("Error retrieving track: {}", err.getMessage()))
-                )
-                        .onErrorResume(err -> {
-                            logger.warn("Song could not be Loify-ed: {}", err.getMessage());
-                            return Mono.empty(); // or return a fallback response
-                        });
+                return
+                        this.auth.webClient.get()
+                                .uri("/v1/search?q=track:" + trackName + "&type=track&limit=1")
+                                .retrieve()
+                                .bodyToMono(SearchTrackResponseDTO.class)
+                                .doOnSuccess(track -> {
+                                    if (track != null && !track.tracks().items().isEmpty()) {
+                                        logger.info("Track found: {}", track.tracks().items().get(0));
+                                    } else {
+                                        logger.info("No track found with name: {}", trackName);
+                                    }
+                                })
+                                .doOnError(err -> logger.error("Error retrieving track: {}", err.getMessage()))
+                .onErrorResume(err -> {
+                    logger.warn("Song could not be Loify-ed: {}", err.getMessage());
+                    return Mono.empty(); // or return a fallback response
+                });
     }
 }
