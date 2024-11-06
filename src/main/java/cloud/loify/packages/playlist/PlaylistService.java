@@ -132,12 +132,7 @@ public class PlaylistService {
                                 }
 
                                 return this.updatePlaylistImage(loifyPlaylistId, loifyPlaylistImage)
-                                        .onErrorResume(err -> {
-                                            logger.warn("Error while updating playlist image: {}. Falling back to default image.", err.getMessage());
-                                            // Specify a default base64 image string here
-                                            String defaultImageBase64 = "default_base64_image_string"; // TODO: Replace with the actual base64 string
-                                            return this.updatePlaylistImage(loifyPlaylistId, defaultImageBase64);
-                                        })
+
                                         .then(this.getAndLoifyAllTracksInPlaylist(playlistId, genre) // STEP 3: Get loified tracks
                                                 .collectList() // Collect all loified tracks into a List
                                                 .flatMap(loifyedTracks -> {
@@ -173,8 +168,7 @@ public class PlaylistService {
                 });
     }
 
-
-    public Mono<String> updatePlaylistImage(String playlistId, String base64Image) {
+    private Mono<String> updatePlaylistImage(String playlistId, String base64Image) {
         logger.info("Updating playlist image for playlist ID: {}", playlistId);
 
         return this.auth.webClient.put()
@@ -184,6 +178,10 @@ public class PlaylistService {
                 .retrieve()
                 .bodyToMono(String.class)
                 .doOnSuccess(success -> logger.info("Successfully updated playlist image for playlist ID: {}", playlistId))
-                .doOnError(err -> logger.error("Error updating playlist image for playlist ID {}: {}", playlistId, err.getMessage()));
+                .doOnError(err -> logger.error("Error updating playlist image for playlist ID {}: {}", playlistId, err.getMessage()))
+                .onErrorResume(err -> {
+                    logger.warn("Error while updating playlist image: {}. Falling back to default image.", err.getMessage());
+                    return this.updatePlaylistImage(playlistId, ImageUtils.DEFAULT_BASE_IMAGE_64);
+                });
     }
 }
