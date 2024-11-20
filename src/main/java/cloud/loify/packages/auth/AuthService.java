@@ -26,7 +26,7 @@ public class AuthService {
 
     public AuthService(WebClient.Builder webClientBuilder, OAuth2AuthorizedClientService authorizedClientService, MusicProviderProperties musicProviderProperties) {
         this.webClientBuilder = webClientBuilder;
-        this.webClient = webClientBuilder.clone().baseUrl(musicProviderProperties.getBaseUrl()).build();
+//        this.webClient = webClientBuilder.clone().baseUrl(musicProviderProperties.getBaseUrl()).build();
         this.authorizedClientService = authorizedClientService;
         this.musicProviderProperties = musicProviderProperties;
         this.tokenManager = null;
@@ -37,13 +37,13 @@ public class AuthService {
      * @param principal the authenticated OAuth2User.
      */
     public void handleLogin(OAuth2User principal) {
-        OAuth2AuthorizedClient client = this.authorizedClientService.loadAuthorizedClient("spotify", principal.getName());
-        if (client == null) {
-            logger.warn("No authorized client found for user: {}", principal.getName());
-            return;
-        }
+//        OAuth2AuthorizedClient client = this.authorizedClientService.loadAuthorizedClient("spotify", principal.getName());
+//        if (client == null) {
+//            logger.warn("No authorized client found for user: {}", principal.getName());
+//            return;
+//        }
 
-        this.tokenManager = new TokenManager(this.musicProviderProperties, client);
+        this.tokenManager = new TokenManager(this.musicProviderProperties, this.authorizedClientService);
         this.webClient = this.webClientBuilder.clone()
             .baseUrl(musicProviderProperties.getBaseUrl())
             .clientConnector(new ReactorClientHttpConnector(HttpClient.create().followRedirect(false)))

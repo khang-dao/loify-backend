@@ -7,7 +7,10 @@ import cloud.loify.packages.auth.AuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -16,16 +19,31 @@ import java.time.Duration;
 @Service
 public class MeService {
 
+    private final WebClient webClient;
     private final AuthService auth;
 
     // Logger instance
     private static final Logger logger = LoggerFactory.getLogger(MeService.class);
 
-    public MeService(AuthService auth) {
+    public MeService(AuthService auth, WebClient.Builder webClientBuilder) {
         this.auth = auth;
+        this.webClient = webClientBuilder.baseUrl("https://api.spotify.com").build();
     }
 
-    // Swap `PlaylistDTO` with `UserPlaylistResponseDTO`
+
+//    public Mono<GetUserPlaylistsResponseDTO> getUserPlaylists(@RegisteredOAuth2AuthorizedClient("spotify") OAuth2AuthorizedClient authorizedClient) {
+//        String accessToken = authorizedClient.getAccessToken().getTokenValue();
+//
+//        return webClient.get()
+//                .uri("/v1/me/playlists")
+//                .header("Authorization", "Bearer " + accessToken)
+//                .retrieve()
+//                .bodyToMono(GetUserPlaylistsResponseDTO.class)
+//                .doOnSuccess(playlists -> logger.info("Successfully retrieved playlists for the current user."))
+//                .doOnError(err -> logger.error("Error retrieving playlists: {}", err.getMessage()));
+//    }
+
+//     Swap `PlaylistDTO` with `UserPlaylistResponseDTO`
     public Mono<GetUserPlaylistsResponseDTO> getAllPlaylistsByCurrentUser() {
         logger.info("Retrieving all playlists for the current user.");
         return this.auth.webClient.get()
@@ -62,19 +80,19 @@ public class MeService {
     }
 
 
-    public Mono<Void> deleteAllLoifyPlaylists() {
-        logger.info("Deleting all playlists with 'loify' in the name.");
-        return getAllPlaylistsByCurrentUser()
-                .flatMapMany(response -> Flux.fromIterable(response.items()))
-                .filter(playlist -> playlist.name().toLowerCase().contains("loify"))
-                .map(playlist -> playlist.id())
-                .collectList()
-                .flatMapMany(Flux::fromIterable)
-                .delayElements(Duration.ofMillis(200))  // Necessary to avoid 502 Bad Gateway error
-                .flatMap(this::deletePlaylistById)
-                .then()
-                .doOnSuccess(v -> logger.info("Successfully deleted all playlists with 'loify' in the name."))
-                .doOnError(err -> logger.error("Error deleting playlists: {}", err.getMessage()));
-    }
+//    public Mono<Void> deleteAllLoifyPlaylists() {
+//        logger.info("Deleting all playlists with 'loify' in the name.");
+//        return getAllPlaylistsByCurrentUser()
+//                .flatMapMany(response -> Flux.fromIterable(response.items()))
+//                .filter(playlist -> playlist.name().toLowerCase().contains("loify"))
+//                .map(playlist -> playlist.id())
+//                .collectList()
+//                .flatMapMany(Flux::fromIterable)
+//                .delayElements(Duration.ofMillis(200))  // Necessary to avoid 502 Bad Gateway error
+//                .flatMap(this::deletePlaylistById)
+//                .then()
+//                .doOnSuccess(v -> logger.info("Successfully deleted all playlists with 'loify' in the name."))
+//                .doOnError(err -> logger.error("Error deleting playlists: {}", err.getMessage()));
+//    }
 
 }

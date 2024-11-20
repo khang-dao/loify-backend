@@ -9,6 +9,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
@@ -26,6 +28,11 @@ public class MeController {
     public MeController(MeService meService) {
         this.meService = meService;
     }
+
+//    @GetMapping("/playlists")
+//    public Mono<GetUserPlaylistsResponseDTO> getPlaylists(@RegisteredOAuth2AuthorizedClient("spotify") OAuth2AuthorizedClient authorizedClient) {
+//        return meService.getUserPlaylists(authorizedClient);
+//    }
 
     /**
      * Retrieves all playlists for the current user.
@@ -117,16 +124,16 @@ public class MeController {
      *
      * @return Mono<Void> upon completion, with status indicating success or error.
      */
-    @DeleteMapping("/playlists/loify")
-    public Mono<Void> deleteAllLoifyedPlaylists() {
-        logger.info("Request to delete all playlists with 'loify' in the name.");
-
-        return meService.deleteAllLoifyPlaylists()
-                .then(Mono.just(ResponseEntity.ok("Successfully deleted all playlists with 'loify' in the name.")))
-                .switchIfEmpty(Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body("No playlists with 'loify' in the name found.")))
-                .onErrorResume(e -> {
-                    logger.error("An error occurred during playlist deletion: {}", e.getMessage(), e);
-                    return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to delete playlists due to an internal error."));
-                }).then();
-    }
+//    @DeleteMapping("/playlists/loify")
+//    public Mono<Void> deleteAllLoifyedPlaylists() {
+//        logger.info("Request to delete all playlists with 'loify' in the name.");
+//
+//        return meService.deleteAllLoifyPlaylists()
+//                .then(Mono.just(ResponseEntity.ok("Successfully deleted all playlists with 'loify' in the name.")))
+//                .switchIfEmpty(Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body("No playlists with 'loify' in the name found.")))
+//                .onErrorResume(e -> {
+//                    logger.error("An error occurred during playlist deletion: {}", e.getMessage(), e);
+//                    return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to delete playlists due to an internal error."));
+//                }).then();
+//    }
 }
