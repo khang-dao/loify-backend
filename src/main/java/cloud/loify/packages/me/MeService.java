@@ -5,6 +5,7 @@ import cloud.loify.packages.playlist.dto.CreatePlaylistRequestDTO;
 import cloud.loify.packages.playlist.dto.CreatePlaylistResponseDTO;
 import cloud.loify.packages.me.dto.GetUserPlaylistsResponseDTO;
 import cloud.loify.packages.auth.AuthService;
+import cloud.loify.packages.playlist.dto.PlaylistDetailsDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
@@ -56,7 +57,7 @@ public class MeService {
     public Mono<Void> deletePlaylistById(String playlistId) {
         logger.info("Deleting playlist with ID: {}", playlistId);
         return this.webClient.delete()
-                .uri("/v1/playlists/{playlistId}/followers", playlistId) // Spotify’s delete endpoint for playlists
+                .uri("/playlists/{playlistId}/followers", playlistId) // Spotify’s delete endpoint for playlists
                 .retrieve()
                 .bodyToMono(Void.class)
                 .doOnSuccess(v -> logger.info("Deleted playlist with ID: {}", playlistId))
@@ -68,15 +69,14 @@ public class MeService {
         logger.info("Deleting all playlists with 'loify' in the name.");
         return getAllPlaylistsByCurrentUser()
                 .flatMapMany(response -> Flux.fromIterable(response.items()))
-                .filter(playlist -> playlist.name().toLowerCase().contains("loify"))
-                .map(playlist -> playlist.id())
-                .collectList()
-                .flatMapMany(Flux::fromIterable)
-                .delayElements(Duration.ofMillis(200))  // Necessary to avoid 502 Bad Gateway error
+                .filter(playlist -> playlist != null && playlist.name() != null && playlist.name().toLowerCase().contains("loify"))
+                .map(PlaylistDetailsDTO::id)
+                .delayElements(Duration.ofMillis(200))
                 .flatMap(this::deletePlaylistById)
                 .then()
                 .doOnSuccess(v -> logger.info("Successfully deleted all playlists with 'loify' in the name."))
                 .doOnError(err -> logger.error("Error deleting playlists: {}", err.getMessage()));
+
     }
 
 }
