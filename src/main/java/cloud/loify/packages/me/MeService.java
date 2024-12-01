@@ -1,5 +1,6 @@
 package cloud.loify.packages.me;
 
+import cloud.loify.packages.me.dto.GetUserResponseDTO;
 import cloud.loify.packages.playlist.dto.CreatePlaylistRequestDTO;
 import cloud.loify.packages.playlist.dto.CreatePlaylistResponseDTO;
 import cloud.loify.packages.me.dto.GetUserPlaylistsResponseDTO;
@@ -7,8 +8,6 @@ import cloud.loify.packages.auth.AuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
-import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
@@ -22,18 +21,17 @@ public class MeService {
     private final WebClient webClient;
     private final AuthService auth;
 
-    // Logger instance
     private static final Logger logger = LoggerFactory.getLogger(MeService.class);
 
-    public MeService(AuthService auth, WebClient.Builder webClientBuilder, WebClient webClient) {
+    public MeService(AuthService auth, WebClient webClient) {
         this.auth = auth;
         this.webClient = webClient;
     }
 
     public Mono<GetUserPlaylistsResponseDTO> getAllPlaylistsByCurrentUser() {
         logger.info("Retrieving all playlists for the current user.");
-        return webClient.get()
-                .uri("/v1/me/playlists")
+        return this.webClient.get()
+                .uri("/me/playlists")
                 .retrieve()
                 .bodyToMono(GetUserPlaylistsResponseDTO.class)
                 .doOnSuccess(playlists -> logger.info("Successfully retrieved playlists for the current user."))
@@ -43,9 +41,9 @@ public class MeService {
     public Mono<CreatePlaylistResponseDTO> createPlaylistForCurrentUser(CreatePlaylistRequestDTO requestBody) {
         logger.info("Creating a new playlist for the current user with request body: {}", requestBody);
         return this.auth.getUserProfile()
-                .map(user -> user.id())
+                .map(GetUserResponseDTO::id)
                 .flatMap(userId -> this.webClient.post()
-                        .uri("v1/users/" + userId + "/playlists")
+                        .uri("/users/" + userId + "/playlists")
                         .contentType(MediaType.APPLICATION_JSON)
                         .bodyValue(requestBody)
                         .retrieve()

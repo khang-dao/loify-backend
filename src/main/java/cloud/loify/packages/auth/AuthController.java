@@ -31,6 +31,31 @@ public class AuthController {
     }
 
     /**
+     * Initiates a new session (login) for the authenticated user.
+     *
+     * @param principal The authenticated OAuth2 user, provided by Spring Security.
+     * @param exchange The server exchange for handling HTTP requests and responses.
+     * @return A {@link Mono<Void>} indicating the outcome of the login attempt.
+     *         Returns:
+     *         - 302 FOUND if the login is successful and the session is created.
+     *         - 401 UNAUTHORIZED if the principal is null or not authenticated.
+     *         - 500 INTERNAL_SERVER_ERROR if an unexpected error occurs during processing.
+     * @throws IllegalArgumentException if the principal is null.
+     */
+    @GetMapping("/session")
+    public Mono<Void> createSession(@AuthenticationPrincipal OAuth2User principal, ServerWebExchange exchange) {
+        if (principal == null) {
+            return Mono.error(new IllegalArgumentException("Principal cannot be null."));
+        }
+
+        return authService.handleLogin(principal.getName())
+                .then(Mono.fromRunnable(() -> {
+                    exchange.getResponse().setStatusCode(HttpStatus.FOUND);
+                    exchange.getResponse().getHeaders().setLocation(URI.create(frontendUrl + "/loify"));
+                }));
+    }
+
+    /**
      * Checks if the user is logged in by retrieving their profile.
      *
      * @return Mono<ResponseEntity<String>> containing the login status message.
@@ -50,28 +75,6 @@ public class AuthController {
                 });
     }
 
-    /**
-     * Creates a new session (login) for the authenticated user.
-     *
-     * @param principal The authenticated OAuth2 user.
-     * @param response The HttpServletResponse used for redirection.
-     * @return ResponseEntity<Void> indicating the result of the login attempt.
-     *         Returns 302 FOUND if successful; 401 UNAUTHORIZED if principal is null;
-     *         500 INTERNAL_SERVER_ERROR if an exception occurs.
-     */
-    @GetMapping("/session")
-    public Mono<Void> createSession(@AuthenticationPrincipal OAuth2User principal, ServerWebExchange exchange) {
-        if (principal == null) {
-            return Mono.error(new IllegalArgumentException("Principal cannot be null."));
-        }
-        logger.info("HELLO WORKLD");
-
-        return authService.handleLogin(principal.getName())
-                .then(Mono.fromRunnable(() -> {
-                    exchange.getResponse().setStatusCode(HttpStatus.FOUND);
-                    exchange.getResponse().getHeaders().setLocation(URI.create("http://localhost:3000/loify"));
-                }));
-    }
 
     /**
      * Logs out the user by invalidating the current session.
@@ -87,7 +90,7 @@ public class AuthController {
             logger.info("User session invalidated successfully");
 
             // Set the Location header for redirection
-            response.getHeaders().setLocation(URI.create("http://localhost:3000"));
+            response.getHeaders().setLocation(URI.create(frontendUrl));
             response.setStatusCode(HttpStatus.FOUND); // 302 Redirect
             return response.setComplete(); // Complete the response
 

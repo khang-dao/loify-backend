@@ -3,31 +3,22 @@ package cloud.loify.packages.auth;
 import cloud.loify.packages.me.dto.GetUserResponseDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientService;
-import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.web.reactive.function.client.ServerOAuth2AuthorizedClientExchangeFilterFunction;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
-import reactor.netty.http.client.HttpClient;
 
 @Service
 public class AuthService {
-
-    private final WebClient.Builder webClientBuilder;
-    public WebClient webClient;
-    private final ReactiveOAuth2AuthorizedClientService authorizedClientService;
-    private final MusicProviderProperties musicProviderProperties;
-
     private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
 
-    public AuthService(WebClient webClient, WebClient.Builder webClientBuilder, ReactiveOAuth2AuthorizedClientService reactiveAuthorizedClientService, MusicProviderProperties musicProviderProperties) {
-        this.webClient = webClient;
-        this.webClientBuilder = webClientBuilder;
+    private final ReactiveOAuth2AuthorizedClientService authorizedClientService;
+    public WebClient webClient;
+
+    public AuthService(ReactiveOAuth2AuthorizedClientService reactiveAuthorizedClientService, WebClient webClient) {
         this.authorizedClientService = reactiveAuthorizedClientService;
-        this.musicProviderProperties = musicProviderProperties;
+        this.webClient = webClient;
     }
 
     /**
@@ -39,7 +30,7 @@ public class AuthService {
                 .flatMap(authorizedClient -> {
                     logger.info("REACHED;");
                     return webClient.get()
-                            .uri("/v1/me")
+                            .uri("/me")
                             .attributes(ServerOAuth2AuthorizedClientExchangeFilterFunction.oauth2AuthorizedClient(authorizedClient))
                             .retrieve()
                             .bodyToMono(Void.class)
@@ -69,9 +60,8 @@ public class AuthService {
             return Mono.error(new IllegalStateException("WebClient is not initialized.")); // Fail fast if WebClient is missing
         }
 
-        // Reactively call the API and fetch user profile
         return this.webClient.get()
-                .uri("/v1/me")
+                .uri("/me")
                 .retrieve()
                 .bodyToMono(GetUserResponseDTO.class)
                 .doOnSuccess(userDetails -> logger.info("User profile retrieved successfully: {}", userDetails))

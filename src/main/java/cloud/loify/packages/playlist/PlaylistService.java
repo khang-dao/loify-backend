@@ -6,7 +6,6 @@ import cloud.loify.packages.playlist.dto.AddTracksToPlaylistRequestDTO;
 import cloud.loify.packages.playlist.dto.GetPlaylistResponseDTO;
 import cloud.loify.packages.track.dto.SearchTrackResponseDTO;
 import cloud.loify.packages.track.dto.GetTracksFromPlaylistResponseDTO;
-import cloud.loify.packages.auth.AuthService;
 import cloud.loify.packages.me.MeService;
 import cloud.loify.packages.track.TrackService;
 import cloud.loify.packages.utils.ImageUtils;
@@ -29,7 +28,6 @@ import java.util.stream.Collectors;
 public class PlaylistService {
 
     private final WebClient webClient;
-    private final AuthService auth;
     private final TrackService track;
     private final MeService me;
 
@@ -37,17 +35,16 @@ public class PlaylistService {
     private static final Logger logger = LoggerFactory.getLogger(PlaylistService.class);
 
     // TODO: should TrackService be injected here? or should the method required (getFirstTrackByTrackName) be made static?
-    public PlaylistService(AuthService authService, TrackService trackService, MeService meService,  WebClient webClient) {
-        this.auth = authService;
-        this.track = trackService;
+    public PlaylistService(MeService meService, TrackService trackService, WebClient webClient) {
         this.me = meService;
+        this.track = trackService;
         this.webClient = webClient;
     }
 
     public Mono<GetPlaylistResponseDTO> getPlaylistById(String playlistId) {
         logger.info("Retrieving playlist details for ID: {}", playlistId);
         return this.webClient.get()
-                .uri("v1/playlists/" + playlistId)
+                .uri("/playlists/" + playlistId)
                 .retrieve()
                 .bodyToMono(GetPlaylistResponseDTO.class)
                 .doOnSuccess(playlist -> logger.info("Successfully retrieved playlist: {}", playlist))
@@ -58,7 +55,7 @@ public class PlaylistService {
     public Mono<GetTracksFromPlaylistResponseDTO> getAllTracksInPlaylist(String playlistId) {
         logger.info("Retrieving all tracks for playlist ID: {}", playlistId);
         return this.webClient.get()
-                .uri("/v1/playlists/" + playlistId + "/tracks")
+                .uri("/playlists/" + playlistId + "/tracks")
                 .retrieve()
                 .bodyToMono(GetTracksFromPlaylistResponseDTO.class)
                 .doOnSuccess(tracks -> logger.info("Successfully retrieved tracks for playlist ID: {}", playlistId))
@@ -69,18 +66,17 @@ public class PlaylistService {
     public Mono<String> addTracksToPlaylist(String playlistId, AddTracksToPlaylistRequestDTO requestBody) {
         logger.info("Adding tracks to playlist ID: {} with request body: {}", playlistId, requestBody);
         return this.webClient.post()
-                .uri("v1/playlists/" + playlistId + "/tracks")
+                .uri("/playlists/" + playlistId + "/tracks")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(requestBody)
                 .retrieve()
-                .bodyToMono(String.class)  // NOTE: String = `snapshot_id`
+                .bodyToMono(String.class)
                 .doOnSuccess(snapshotId -> logger.info("Successfully added tracks to playlist ID: {}. Snapshot ID: {}", playlistId, snapshotId))
                 .doOnError(err -> logger.error("Error adding tracks to playlist ID [{}]: {}", playlistId, err.getMessage()));
     }
 
     public Flux<SearchTrackResponseDTO> getAndLoifyAllTracksInPlaylist(String playlistId, String genre) {
         logger.info("Getting all tracks in playlist ID: {}", playlistId);
-
         return this.getAllTracksInPlaylist(playlistId)
                 .flatMapMany(tracks -> {
                     if (tracks == null || tracks.items() == null || tracks.items().isEmpty()) {
@@ -98,8 +94,6 @@ public class PlaylistService {
                     throw new RuntimeException(err);
                 });
     }
-
-
 
     // TODO: Make this atomic - because sometimes the playlist is created, but the songs aren't added
     // TODO: ^ need to make it so that if one fails, then it's as if the method was never called
@@ -172,7 +166,7 @@ public class PlaylistService {
         logger.info("Updating playlist image for playlist ID: {}", playlistId);
 
         return this.webClient.put()
-                .uri("v1/playlists/" + playlistId + "/images")
+                .uri("/playlists/" + playlistId + "/images")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(base64Image)
                 .retrieve()

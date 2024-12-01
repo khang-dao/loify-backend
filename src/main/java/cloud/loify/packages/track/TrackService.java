@@ -32,7 +32,7 @@ public class TrackService {
 
                 return
                         this.webClient.get()
-                                .uri("/v1/search?q=track:" + trackName + "&type=track&limit=1")
+                                .uri("/search?q=track:" + trackName + "&type=track&limit=1")
                                 .retrieve()
                                 .bodyToMono(SearchTrackResponseDTO.class)
                                 .doOnSuccess(track -> {

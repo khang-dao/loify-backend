@@ -19,7 +19,7 @@ public class WebClientConfig {
         oauth2FilterFunction.setDefaultOAuth2AuthorizedClient(true); // Use default client if none is specified
 
         return WebClient.builder()
-                .baseUrl("https://api.spotify.com")
+                .baseUrl("https://api.spotify.com/v1")
                 .filter(oauth2FilterFunction) // Apply the OAuth2 filter
                 .build();
     }
