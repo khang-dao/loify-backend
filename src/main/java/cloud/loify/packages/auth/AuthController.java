@@ -1,6 +1,6 @@
 package cloud.loify.packages.auth;
 
-import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,7 +9,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
+
+import java.net.URI;
 
 /**
  * Controller for handling authentication-related operations.
@@ -57,24 +60,17 @@ public class AuthController {
      *         500 INTERNAL_SERVER_ERROR if an exception occurs.
      */
     @GetMapping("/session")
-    public ResponseEntity<Void> createSession(@AuthenticationPrincipal OAuth2User principal, HttpServletResponse response) {
-        try {
-            if (principal == null) {
-                logger.warn("Attempted login with null principal");
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-            }
-            authService.handleLogin(principal);
-            logger.info("User [{}] has successfully logged in", principal.getName());
-
-            // Redirect to frontend app
-            response.setStatus(HttpServletResponse.SC_FOUND);
-            response.setHeader("Location", this.frontendUrl); // Replace with actual frontend URL
-            return new ResponseEntity<>(HttpStatus.FOUND);
-
-        } catch (Exception e) {
-            logger.error("Error during login process: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    public Mono<Void> createSession(@AuthenticationPrincipal OAuth2User principal, ServerWebExchange exchange) {
+        if (principal == null) {
+            return Mono.error(new IllegalArgumentException("Principal cannot be null."));
         }
+        logger.info("HELLO WORKLD");
+
+        return authService.handleLogin(principal.getName())
+                .then(Mono.fromRunnable(() -> {
+                    exchange.getResponse().setStatusCode(HttpStatus.FOUND);
+                    exchange.getResponse().getHeaders().setLocation(URI.create("http://localhost:3000/loify"));
+                }));
     }
 
     /**
@@ -84,15 +80,21 @@ public class AuthController {
      *         Returns 204 NO CONTENT if successful; 500 INTERNAL_SERVER_ERROR if an exception occurs.
      */
     @GetMapping("/session/logout")
-    public ResponseEntity<Void> deleteSession(HttpServletResponse response) {
+    public Mono<Void> deleteSession(ServerWebExchange exchange) {
+        ServerHttpResponse response = exchange.getResponse();
         try {
-            authService.resetWebClient();
+//            authService.resetWebClient();
             logger.info("User session invalidated successfully");
-            response.setHeader("Location", "http://localhost:3000");
-            return ResponseEntity.status(HttpStatus.FOUND).build(); // 302 Redirect
+
+            // Set the Location header for redirection
+            response.getHeaders().setLocation(URI.create("http://localhost:3000"));
+            response.setStatusCode(HttpStatus.FOUND); // 302 Redirect
+            return response.setComplete(); // Complete the response
+
         } catch (Exception e) {
             logger.error("Error during logout process: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
+            return response.setComplete(); // Complete the response with an error status
         }
     }
 }

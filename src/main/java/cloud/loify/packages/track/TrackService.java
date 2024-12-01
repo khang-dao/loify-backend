@@ -5,16 +5,19 @@ import cloud.loify.packages.auth.AuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 @Service
 public class TrackService {
 
+    private final WebClient webClient;
     private final AuthService auth;
 
     private static final Logger logger = LoggerFactory.getLogger(TrackService.class);
 
-    public TrackService(AuthService authService) {
+    public TrackService( WebClient webClient, AuthService authService) {
+        this.webClient = webClient;
         this.auth = authService;
     }
 
@@ -28,7 +31,7 @@ public class TrackService {
         logger.info("Searching for track with name: {}", trackName);
 
                 return
-                        this.auth.webClient.get()
+                        this.webClient.get()
                                 .uri("/v1/search?q=track:" + trackName + "&type=track&limit=1")
                                 .retrieve()
                                 .bodyToMono(SearchTrackResponseDTO.class)

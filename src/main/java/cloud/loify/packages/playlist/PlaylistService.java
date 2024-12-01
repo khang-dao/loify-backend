@@ -5,12 +5,10 @@ import cloud.loify.packages.playlist.dto.CreatePlaylistResponseDTO;
 import cloud.loify.packages.playlist.dto.AddTracksToPlaylistRequestDTO;
 import cloud.loify.packages.playlist.dto.GetPlaylistResponseDTO;
 import cloud.loify.packages.track.dto.SearchTrackResponseDTO;
-import cloud.loify.packages.track.dto.TrackDetailsFromPlaylistDTO;
 import cloud.loify.packages.track.dto.GetTracksFromPlaylistResponseDTO;
 import cloud.loify.packages.auth.AuthService;
 import cloud.loify.packages.me.MeService;
 import cloud.loify.packages.track.TrackService;
-import cloud.loify.packages.utils.ApiUtils;
 import cloud.loify.packages.utils.ImageUtils;
 import cloud.loify.packages.utils.StringUtils;
 
@@ -18,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -29,6 +28,7 @@ import java.util.stream.Collectors;
 @Service
 public class PlaylistService {
 
+    private final WebClient webClient;
     private final AuthService auth;
     private final TrackService track;
     private final MeService me;
@@ -37,15 +37,16 @@ public class PlaylistService {
     private static final Logger logger = LoggerFactory.getLogger(PlaylistService.class);
 
     // TODO: should TrackService be injected here? or should the method required (getFirstTrackByTrackName) be made static?
-    public PlaylistService(AuthService authService, TrackService trackService, MeService meService) {
+    public PlaylistService(AuthService authService, TrackService trackService, MeService meService,  WebClient webClient) {
         this.auth = authService;
         this.track = trackService;
         this.me = meService;
+        this.webClient = webClient;
     }
 
     public Mono<GetPlaylistResponseDTO> getPlaylistById(String playlistId) {
         logger.info("Retrieving playlist details for ID: {}", playlistId);
-        return this.auth.webClient.get()
+        return this.webClient.get()
                 .uri("v1/playlists/" + playlistId)
                 .retrieve()
                 .bodyToMono(GetPlaylistResponseDTO.class)
@@ -56,7 +57,7 @@ public class PlaylistService {
     // TODO: This MAY be able to be removed - does it return BASICALLY the same content as `getPlaylistById()`
     public Mono<GetTracksFromPlaylistResponseDTO> getAllTracksInPlaylist(String playlistId) {
         logger.info("Retrieving all tracks for playlist ID: {}", playlistId);
-        return this.auth.webClient.get()
+        return this.webClient.get()
                 .uri("/v1/playlists/" + playlistId + "/tracks")
                 .retrieve()
                 .bodyToMono(GetTracksFromPlaylistResponseDTO.class)
@@ -67,7 +68,7 @@ public class PlaylistService {
     // TODO: Fix - "spotify:track:54eCPwH8hZqAJBMlZ9YEyJ" --> "54eCPwH8hZqAJBMlZ9YEyJ" (if deemed possible)
     public Mono<String> addTracksToPlaylist(String playlistId, AddTracksToPlaylistRequestDTO requestBody) {
         logger.info("Adding tracks to playlist ID: {} with request body: {}", playlistId, requestBody);
-        return this.auth.webClient.post()
+        return this.webClient.post()
                 .uri("v1/playlists/" + playlistId + "/tracks")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(requestBody)
@@ -88,7 +89,6 @@ public class PlaylistService {
                     }
 
                     return Flux.fromIterable(tracks.items())
-                            .map(t -> (TrackDetailsFromPlaylistDTO) t) // TODO: might be able to delete
                             .map(t -> StringUtils.customizeTrackName(t.track().name(), genre))
                             .flatMap(this.track::getFirstTrackByTrackName);
                 })
@@ -171,7 +171,7 @@ public class PlaylistService {
     private Mono<String> updatePlaylistImage(String playlistId, String base64Image) {
         logger.info("Updating playlist image for playlist ID: {}", playlistId);
 
-        return this.auth.webClient.put()
+        return this.webClient.put()
                 .uri("v1/playlists/" + playlistId + "/images")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(base64Image)

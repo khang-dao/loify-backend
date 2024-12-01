@@ -25,28 +25,14 @@ public class MeService {
     // Logger instance
     private static final Logger logger = LoggerFactory.getLogger(MeService.class);
 
-    public MeService(AuthService auth, WebClient.Builder webClientBuilder) {
+    public MeService(AuthService auth, WebClient.Builder webClientBuilder, WebClient webClient) {
         this.auth = auth;
-        this.webClient = webClientBuilder.baseUrl("https://api.spotify.com").build();
+        this.webClient = webClient;
     }
 
-
-//    public Mono<GetUserPlaylistsResponseDTO> getUserPlaylists(@RegisteredOAuth2AuthorizedClient("spotify") OAuth2AuthorizedClient authorizedClient) {
-//        String accessToken = authorizedClient.getAccessToken().getTokenValue();
-//
-//        return webClient.get()
-//                .uri("/v1/me/playlists")
-//                .header("Authorization", "Bearer " + accessToken)
-//                .retrieve()
-//                .bodyToMono(GetUserPlaylistsResponseDTO.class)
-//                .doOnSuccess(playlists -> logger.info("Successfully retrieved playlists for the current user."))
-//                .doOnError(err -> logger.error("Error retrieving playlists: {}", err.getMessage()));
-//    }
-
-//     Swap `PlaylistDTO` with `UserPlaylistResponseDTO`
     public Mono<GetUserPlaylistsResponseDTO> getAllPlaylistsByCurrentUser() {
         logger.info("Retrieving all playlists for the current user.");
-        return this.auth.webClient.get()
+        return webClient.get()
                 .uri("/v1/me/playlists")
                 .retrieve()
                 .bodyToMono(GetUserPlaylistsResponseDTO.class)
@@ -58,7 +44,7 @@ public class MeService {
         logger.info("Creating a new playlist for the current user with request body: {}", requestBody);
         return this.auth.getUserProfile()
                 .map(user -> user.id())
-                .flatMap(userId -> this.auth.webClient.post()
+                .flatMap(userId -> this.webClient.post()
                         .uri("v1/users/" + userId + "/playlists")
                         .contentType(MediaType.APPLICATION_JSON)
                         .bodyValue(requestBody)
@@ -71,7 +57,7 @@ public class MeService {
 
     public Mono<Void> deletePlaylistById(String playlistId) {
         logger.info("Deleting playlist with ID: {}", playlistId);
-        return this.auth.webClient.delete()
+        return this.webClient.delete()
                 .uri("/v1/playlists/{playlistId}/followers", playlistId) // Spotify’s delete endpoint for playlists
                 .retrieve()
                 .bodyToMono(Void.class)
@@ -80,19 +66,19 @@ public class MeService {
     }
 
 
-//    public Mono<Void> deleteAllLoifyPlaylists() {
-//        logger.info("Deleting all playlists with 'loify' in the name.");
-//        return getAllPlaylistsByCurrentUser()
-//                .flatMapMany(response -> Flux.fromIterable(response.items()))
-//                .filter(playlist -> playlist.name().toLowerCase().contains("loify"))
-//                .map(playlist -> playlist.id())
-//                .collectList()
-//                .flatMapMany(Flux::fromIterable)
-//                .delayElements(Duration.ofMillis(200))  // Necessary to avoid 502 Bad Gateway error
-//                .flatMap(this::deletePlaylistById)
-//                .then()
-//                .doOnSuccess(v -> logger.info("Successfully deleted all playlists with 'loify' in the name."))
-//                .doOnError(err -> logger.error("Error deleting playlists: {}", err.getMessage()));
-//    }
+    public Mono<Void> deleteAllLoifyPlaylists() {
+        logger.info("Deleting all playlists with 'loify' in the name.");
+        return getAllPlaylistsByCurrentUser()
+                .flatMapMany(response -> Flux.fromIterable(response.items()))
+                .filter(playlist -> playlist.name().toLowerCase().contains("loify"))
+                .map(playlist -> playlist.id())
+                .collectList()
+                .flatMapMany(Flux::fromIterable)
+                .delayElements(Duration.ofMillis(200))  // Necessary to avoid 502 Bad Gateway error
+                .flatMap(this::deletePlaylistById)
+                .then()
+                .doOnSuccess(v -> logger.info("Successfully deleted all playlists with 'loify' in the name."))
+                .doOnError(err -> logger.error("Error deleting playlists: {}", err.getMessage()));
+    }
 
 }
