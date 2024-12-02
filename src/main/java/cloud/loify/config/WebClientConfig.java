@@ -28,7 +28,6 @@ public class WebClientConfig {
                 .baseUrl("https://api.spotify.com/v1")
                 .filter(oauth2FilterFunction) // Apply the OAuth2 filter
                 .filter(retryFilter()) // Apply the retry filter for 429 responses
-//                .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(16 * 1024 * 1024)) // 16 MB
                 .build();
     }

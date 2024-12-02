@@ -1,10 +1,13 @@
 package cloud.loify.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.security.web.server.authentication.logout.SecurityContextServerLogoutHandler;
 import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 import org.springframework.web.cors.CorsConfiguration;
@@ -16,6 +19,7 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @Configuration
 @EnableWebFluxSecurity
 public class SecurityConfig {
+    private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
 
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
@@ -33,14 +37,13 @@ public class SecurityConfig {
 
                         // TODO: Delete these
                         .pathMatchers("/api/v1/playlists/{playlistId}/tracks").permitAll()
-
                         .pathMatchers("/api/v1/me/playlists/loify").permitAll() // For delete loify playlists
-
                         .anyExchange().authenticated() // Require authentication for all other requests
                 )
                 .oauth2Login(withDefaults())
                 .logout(logout -> logout
                         .logoutUrl("/api/v1/auth/session/logout")
+                        .logoutHandler(new SecurityContextServerLogoutHandler())
                 )
                 .build();
     }
