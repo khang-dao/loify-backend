@@ -15,17 +15,12 @@ public class TrailingSlashHandlerFilter implements WebFilter {
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         String requestUri = exchange.getRequest().getURI().getPath();
 
-        // Check if the URI ends with a trailing slash
         if (requestUri.endsWith("/")) {
             String newUrl = requestUri.substring(0, requestUri.length() - 1);
-
-            // Redirect to the new URL without the trailing slash
             exchange.getResponse().setStatusCode(HttpStatus.MOVED_PERMANENTLY);
             exchange.getResponse().getHeaders().set(HttpHeaders.LOCATION, newUrl);
             return exchange.getResponse().setComplete();
         }
-
-        // Continue the filter chain if no trailing slash is found
         return chain.filter(exchange);
     }
 }
