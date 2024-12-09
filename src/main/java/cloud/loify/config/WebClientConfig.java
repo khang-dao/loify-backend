@@ -3,7 +3,6 @@ package cloud.loify.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.security.oauth2.client.AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientProviderBuilder;
@@ -55,11 +54,9 @@ public class WebClientConfig {
     private ExchangeFilterFunction retryFilter() {
         return (request, next) -> next.exchange(request)
                 .flatMap(response -> {
-                    // Retry only if the response status is 429
                     if (response.statusCode() == HttpStatus.TOO_MANY_REQUESTS) {
                         String retryAfterHeader = response.headers().asHttpHeaders().getFirst("Retry-After");
                         long retryAfterSeconds = retryAfterHeader != null ? Long.parseLong(retryAfterHeader) : 1;
-
                         System.out.printf("Received 429 Too Many Requests. Retrying after %d seconds.%n", retryAfterSeconds);
 
                         // Delay before retrying the operation
