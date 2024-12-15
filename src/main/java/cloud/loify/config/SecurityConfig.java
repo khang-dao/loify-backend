@@ -38,7 +38,6 @@ public class SecurityConfig {
                         // TODO: Keep these (remove todo)
                         .pathMatchers("/v1/home").permitAll()
                         .pathMatchers("/v1/auth/session/check").permitAll()
-                        .pathMatchers("/v1/auth/session/test").permitAll()
 
                         // TODO: Delete these
                         .pathMatchers("/v1/playlists/{playlistId}/tracks").permitAll()
