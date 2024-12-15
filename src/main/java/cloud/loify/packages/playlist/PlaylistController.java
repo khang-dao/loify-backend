@@ -19,7 +19,7 @@ import reactor.core.publisher.Mono;
  * Controller for managing playlists.
  */
 @RestController
-@RequestMapping("/api/v1/playlists")
+@RequestMapping("/v1/playlists")
 public class PlaylistController {
 
     private final PlaylistService playlistService;

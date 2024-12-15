@@ -17,7 +17,7 @@ import reactor.core.publisher.Mono;
  * Controller for managing user playlists.
  */
 @RestController
-@RequestMapping("/api/v1/me")
+@RequestMapping("/v1/me")
 public class MeController {
 
     private static final Logger logger = LoggerFactory.getLogger(MeController.class);

@@ -17,7 +17,7 @@ import java.net.URI;
  * Controller for handling authentication-related operations.
  */
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping("/v1/auth")
 public class AuthController {
 
     private final AuthService authService;

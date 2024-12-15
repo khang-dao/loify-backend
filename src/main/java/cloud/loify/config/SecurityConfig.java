@@ -32,22 +32,22 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(ServerHttpSecurity.CsrfSpec::disable) // Disable CSRF for simplicity, adjust as needed for your app
                 .authorizeExchange(auth -> auth
-                        .pathMatchers(org.springframework.http.HttpMethod.OPTIONS, "/api/v1/playlists/{playlistId}/loify").permitAll() // Allow preflight OPTIONS requests
-                        .pathMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/playlists/{playlistId}/loify").permitAll() // Allow POST requests
+                        .pathMatchers(org.springframework.http.HttpMethod.OPTIONS, "/v1/playlists/{playlistId}/loify").permitAll() // Allow preflight OPTIONS requests
+                        .pathMatchers(org.springframework.http.HttpMethod.POST, "/v1/playlists/{playlistId}/loify").permitAll() // Allow POST requests
 
                         // TODO: Keep these (remove todo)
-                        .pathMatchers("/api/v1/home").permitAll()
-                        .pathMatchers("/api/v1/auth/session/check").permitAll()
-                        .pathMatchers("/api/v1/auth/session/test").permitAll()
+                        .pathMatchers("/v1/home").permitAll()
+                        .pathMatchers("/v1/auth/session/check").permitAll()
+                        .pathMatchers("/v1/auth/session/test").permitAll()
 
                         // TODO: Delete these
-                        .pathMatchers("/api/v1/playlists/{playlistId}/tracks").permitAll()
-                        .pathMatchers("/api/v1/me/playlists/loify").permitAll() // For delete loify playlists
+                        .pathMatchers("/v1/playlists/{playlistId}/tracks").permitAll()
+                        .pathMatchers("/v1/me/playlists/loify").permitAll() // For delete loify playlists
                         .anyExchange().authenticated() // Require authentication for all other requests
                 )
                 .oauth2Login(withDefaults())
                 .logout(logout -> logout
-                        .logoutUrl("/api/v1/auth/session/logout")
+                        .logoutUrl("/v1/auth/session/logout")
                         .logoutHandler(new SecurityContextServerLogoutHandler())
                 )
                 .build();

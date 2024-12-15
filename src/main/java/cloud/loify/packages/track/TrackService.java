@@ -38,10 +38,6 @@ public class TrackService {
                         logger.info("No track found with name: {}", trackName);
                     }
                 })
-                .doOnError(err -> logger.error("Error retrieving track: {}", err.getMessage()))
-                .onErrorResume(err -> {
-                    logger.warn("Song could not be Loify-ed: {}", err.getMessage());
-                    return Mono.empty(); // or return a fallback response
-                });
+                .doOnError(err -> logger.error("Song could not be Loify-ed: {}", err.getMessage()));
     }
 }
