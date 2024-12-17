@@ -5,12 +5,9 @@ import cloud.loify.packages.playlist.dto.CreatePlaylistResponseDTO;
 import cloud.loify.packages.playlist.dto.AddTracksToPlaylistRequestDTO;
 import cloud.loify.packages.playlist.dto.GetPlaylistResponseDTO;
 import cloud.loify.packages.track.dto.SearchTrackResponseDTO;
-import cloud.loify.packages.track.dto.TrackDetailsFromPlaylistDTO;
 import cloud.loify.packages.track.dto.GetTracksFromPlaylistResponseDTO;
-import cloud.loify.packages.auth.AuthService;
 import cloud.loify.packages.me.MeService;
 import cloud.loify.packages.track.TrackService;
-import cloud.loify.packages.utils.ApiUtils;
 import cloud.loify.packages.utils.ImageUtils;
 import cloud.loify.packages.utils.StringUtils;
 
@@ -18,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -29,7 +27,7 @@ import java.util.stream.Collectors;
 @Service
 public class PlaylistService {
 
-    private final AuthService auth;
+    private final WebClient webClient;
     private final TrackService track;
     private final MeService me;
 
@@ -37,16 +35,16 @@ public class PlaylistService {
     private static final Logger logger = LoggerFactory.getLogger(PlaylistService.class);
 
     // TODO: should TrackService be injected here? or should the method required (getFirstTrackByTrackName) be made static?
-    public PlaylistService(AuthService authService, TrackService trackService, MeService meService) {
-        this.auth = authService;
-        this.track = trackService;
+    public PlaylistService(MeService meService, TrackService trackService, WebClient webClient) {
         this.me = meService;
+        this.track = trackService;
+        this.webClient = webClient;
     }
 
     public Mono<GetPlaylistResponseDTO> getPlaylistById(String playlistId) {
         logger.info("Retrieving playlist details for ID: {}", playlistId);
-        return this.auth.webClient.get()
-                .uri("v1/playlists/" + playlistId)
+        return this.webClient.get()
+                .uri("/playlists/" + playlistId)
                 .retrieve()
                 .bodyToMono(GetPlaylistResponseDTO.class)
                 .doOnSuccess(playlist -> logger.info("Successfully retrieved playlist: {}", playlist))
@@ -56,8 +54,8 @@ public class PlaylistService {
     // TODO: This MAY be able to be removed - does it return BASICALLY the same content as `getPlaylistById()`
     public Mono<GetTracksFromPlaylistResponseDTO> getAllTracksInPlaylist(String playlistId) {
         logger.info("Retrieving all tracks for playlist ID: {}", playlistId);
-        return this.auth.webClient.get()
-                .uri("/v1/playlists/" + playlistId + "/tracks")
+        return this.webClient.get()
+                .uri("/playlists/" + playlistId + "/tracks")
                 .retrieve()
                 .bodyToMono(GetTracksFromPlaylistResponseDTO.class)
                 .doOnSuccess(tracks -> logger.info("Successfully retrieved tracks for playlist ID: {}", playlistId))
@@ -67,19 +65,18 @@ public class PlaylistService {
     // TODO: Fix - "spotify:track:54eCPwH8hZqAJBMlZ9YEyJ" --> "54eCPwH8hZqAJBMlZ9YEyJ" (if deemed possible)
     public Mono<String> addTracksToPlaylist(String playlistId, AddTracksToPlaylistRequestDTO requestBody) {
         logger.info("Adding tracks to playlist ID: {} with request body: {}", playlistId, requestBody);
-        return this.auth.webClient.post()
-                .uri("v1/playlists/" + playlistId + "/tracks")
+        return this.webClient.post()
+                .uri("/playlists/" + playlistId + "/tracks")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(requestBody)
                 .retrieve()
-                .bodyToMono(String.class)  // NOTE: String = `snapshot_id`
+                .bodyToMono(String.class)
                 .doOnSuccess(snapshotId -> logger.info("Successfully added tracks to playlist ID: {}. Snapshot ID: {}", playlistId, snapshotId))
                 .doOnError(err -> logger.error("Error adding tracks to playlist ID [{}]: {}", playlistId, err.getMessage()));
     }
 
     public Flux<SearchTrackResponseDTO> getAndLoifyAllTracksInPlaylist(String playlistId, String genre) {
         logger.info("Getting all tracks in playlist ID: {}", playlistId);
-
         return this.getAllTracksInPlaylist(playlistId)
                 .flatMapMany(tracks -> {
                     if (tracks == null || tracks.items() == null || tracks.items().isEmpty()) {
@@ -88,7 +85,6 @@ public class PlaylistService {
                     }
 
                     return Flux.fromIterable(tracks.items())
-                            .map(t -> (TrackDetailsFromPlaylistDTO) t) // TODO: might be able to delete
                             .map(t -> StringUtils.customizeTrackName(t.track().name(), genre))
                             .flatMap(this.track::getFirstTrackByTrackName);
                 })
@@ -98,8 +94,6 @@ public class PlaylistService {
                     throw new RuntimeException(err);
                 });
     }
-
-
 
     // TODO: Make this atomic - because sometimes the playlist is created, but the songs aren't added
     // TODO: ^ need to make it so that if one fails, then it's as if the method was never called
@@ -171,8 +165,8 @@ public class PlaylistService {
     private Mono<String> updatePlaylistImage(String playlistId, String base64Image) {
         logger.info("Updating playlist image for playlist ID: {}", playlistId);
 
-        return this.auth.webClient.put()
-                .uri("v1/playlists/" + playlistId + "/images")
+        return this.webClient.put()
+                .uri("/playlists/" + playlistId + "/images")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(base64Image)
                 .retrieve()

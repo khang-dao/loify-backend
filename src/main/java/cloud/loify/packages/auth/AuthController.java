@@ -1,6 +1,5 @@
 package cloud.loify.packages.auth;
 
-import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,13 +8,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
+
+import java.net.URI;
 
 /**
  * Controller for handling authentication-related operations.
  */
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping("/v1/auth")
 public class AuthController {
 
     private final AuthService authService;
@@ -25,6 +27,31 @@ public class AuthController {
 
     public AuthController(AuthService authService) {
         this.authService = authService;
+    }
+
+    /**
+     * Initiates a new session (login) for the authenticated user.
+     *
+     * @param principal The authenticated OAuth2 user, provided by Spring Security.
+     * @param exchange The server exchange for handling HTTP requests and responses.
+     * @return A {@link Mono<Void>} indicating the outcome of the login attempt.
+     *         Returns:
+     *         - 302 FOUND if the login is successful and the session is created.
+     *         - 401 UNAUTHORIZED if the principal is null or not authenticated.
+     *         - 500 INTERNAL_SERVER_ERROR if an unexpected error occurs during processing.
+     * @throws IllegalArgumentException if the principal is null.
+     */
+    @GetMapping("/session")
+    public Mono<Void> createSession(@AuthenticationPrincipal OAuth2User principal, ServerWebExchange exchange) {
+        if (principal == null) {
+            return Mono.error(new IllegalArgumentException("Principal cannot be null."));
+        }
+
+        return authService.handleLogin(principal.getName())
+                .then(Mono.fromRunnable(() -> {
+                    exchange.getResponse().setStatusCode(HttpStatus.FOUND);
+                    exchange.getResponse().getHeaders().setLocation(URI.create(frontendUrl + "/loify"));
+                }));
     }
 
     /**
@@ -45,54 +72,5 @@ public class AuthController {
                     return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                             .body("UNAUTHORIZED: Invalid token or session expired"));
                 });
-    }
-
-    /**
-     * Creates a new session (login) for the authenticated user.
-     *
-     * @param principal The authenticated OAuth2 user.
-     * @param response The HttpServletResponse used for redirection.
-     * @return ResponseEntity<Void> indicating the result of the login attempt.
-     *         Returns 302 FOUND if successful; 401 UNAUTHORIZED if principal is null;
-     *         500 INTERNAL_SERVER_ERROR if an exception occurs.
-     */
-    @GetMapping("/session")
-    public ResponseEntity<Void> createSession(@AuthenticationPrincipal OAuth2User principal, HttpServletResponse response) {
-        try {
-            if (principal == null) {
-                logger.warn("Attempted login with null principal");
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-            }
-            authService.handleLogin(principal);
-            logger.info("User [{}] has successfully logged in", principal.getName());
-
-            // Redirect to frontend app
-            response.setStatus(HttpServletResponse.SC_FOUND);
-            response.setHeader("Location", this.frontendUrl); // Replace with actual frontend URL
-            return new ResponseEntity<>(HttpStatus.FOUND);
-
-        } catch (Exception e) {
-            logger.error("Error during login process: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    /**
-     * Logs out the user by invalidating the current session.
-     *
-     * @return ResponseEntity<Void> indicating the result of the logout attempt.
-     *         Returns 204 NO CONTENT if successful; 500 INTERNAL_SERVER_ERROR if an exception occurs.
-     */
-    @GetMapping("/session/logout")
-    public ResponseEntity<Void> deleteSession(HttpServletResponse response) {
-        try {
-            authService.resetWebClient();
-            logger.info("User session invalidated successfully");
-            response.setHeader("Location", "http://localhost:3000");
-            return ResponseEntity.status(HttpStatus.FOUND).build(); // 302 Redirect
-        } catch (Exception e) {
-            logger.error("Error during logout process: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
     }
 }

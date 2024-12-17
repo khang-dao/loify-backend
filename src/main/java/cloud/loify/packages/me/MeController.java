@@ -17,11 +17,12 @@ import reactor.core.publisher.Mono;
  * Controller for managing user playlists.
  */
 @RestController
-@RequestMapping("/api/v1/me")
+@RequestMapping("/v1/me")
 public class MeController {
 
-    private final MeService meService;
     private static final Logger logger = LoggerFactory.getLogger(MeController.class);
+
+    private final MeService meService;
 
     public MeController(MeService meService) {
         this.meService = meService;

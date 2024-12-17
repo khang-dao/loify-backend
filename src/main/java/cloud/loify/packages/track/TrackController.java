@@ -14,7 +14,7 @@ import reactor.core.publisher.Mono;
  * Controller for managing tracks.
  */
 @RestController
-@RequestMapping("/api/v1/tracks")
+@RequestMapping("/v1/tracks")
 public class TrackController {
 
     private final TrackService trackService;
@@ -31,7 +31,7 @@ public class TrackController {
      * @return a Mono containing the TrackSearchResponseDTO with the track details.
      * @throws ResponseStatusException if the track is not found or an error occurs during the search.
      */
-    @GetMapping // Example URL: http://loify.com/api/v1/tracks?trackName=hotline+bling
+    @GetMapping // Example URL: http://loify.com/v1/tracks?trackName=hotline+bling
     public Mono<ResponseEntity<SearchTrackResponseDTO>> getFirstTrackByTrackName(@RequestParam String trackName) {
         // Validate the input parameter
         if (trackName == null || trackName.trim().isEmpty()) {
