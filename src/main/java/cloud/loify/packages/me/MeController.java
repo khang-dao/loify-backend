@@ -119,7 +119,7 @@ public class MeController {
      * @return Mono<Void> upon completion, with status indicating success or error.
      */
     @DeleteMapping("/playlists/loify")
-    public Mono<Void> deleteAllLoifyedPlaylists() {
+    public Mono<ResponseEntity<String>> deleteAllLoifyedPlaylists() {
         logger.info("Request to delete all playlists with 'loify' in the name.");
 
         return meService.deleteAllLoifyPlaylists()
@@ -128,6 +128,6 @@ public class MeController {
                 .onErrorResume(e -> {
                     logger.error("An error occurred during playlist deletion: {}", e.getMessage(), e);
                     return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to delete playlists due to an internal error."));
-                }).then();
+                });
     }
 }
