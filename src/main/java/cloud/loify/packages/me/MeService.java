@@ -1,10 +1,10 @@
 package cloud.loify.packages.me;
 
+import cloud.loify.packages.auth.AuthService;
+import cloud.loify.packages.me.dto.GetUserPlaylistsResponseDTO;
 import cloud.loify.packages.me.dto.GetUserResponseDTO;
 import cloud.loify.packages.playlist.dto.CreatePlaylistRequestDTO;
 import cloud.loify.packages.playlist.dto.CreatePlaylistResponseDTO;
-import cloud.loify.packages.me.dto.GetUserPlaylistsResponseDTO;
-import cloud.loify.packages.auth.AuthService;
 import cloud.loify.packages.playlist.dto.PlaylistDetailsDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,10 +19,9 @@ import java.time.Duration;
 @Service
 public class MeService {
 
+    private static final Logger logger = LoggerFactory.getLogger(MeService.class);
     private final WebClient webClient;
     private final AuthService auth;
-
-    private static final Logger logger = LoggerFactory.getLogger(MeService.class);
 
     public MeService(AuthService auth, WebClient webClient) {
         this.auth = auth;

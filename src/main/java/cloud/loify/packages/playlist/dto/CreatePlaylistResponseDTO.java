@@ -4,10 +4,9 @@ package cloud.loify.packages.playlist.dto;
 import cloud.loify.packages.common.dto.CoverImageDetailsDTO;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.Map;
-
 
 import java.util.List;
+import java.util.Map;
 
 public record CreatePlaylistResponseDTO(
         String id,

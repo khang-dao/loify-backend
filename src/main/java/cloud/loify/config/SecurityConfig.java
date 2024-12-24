@@ -9,9 +9,9 @@ import org.springframework.security.config.annotation.web.reactive.EnableWebFlux
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authentication.logout.SecurityContextServerLogoutHandler;
+import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
-import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.server.session.CookieWebSessionIdResolver;
 import org.springframework.web.server.session.WebSessionIdResolver;
 
@@ -24,7 +24,8 @@ import static org.springframework.security.config.Customizer.withDefaults;
 public class SecurityConfig {
     private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
 
-    @Value("${frontend.url}") private String frontendUrl;
+    @Value("${frontend.url}")
+    private String frontendUrl;
 
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {

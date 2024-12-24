@@ -9,7 +9,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-public record GetUserResponseDTO(String id, @JsonProperty("display_name") String username, String email, String country) implements OAuth2User {
+public record GetUserResponseDTO(String id, @JsonProperty("display_name") String username, String email,
+                                 String country) implements OAuth2User {
     @Override
     public Map<String, Object> getAttributes() {
         return Map.of();

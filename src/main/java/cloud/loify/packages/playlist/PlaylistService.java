@@ -1,16 +1,15 @@
 package cloud.loify.packages.playlist;
 
+import cloud.loify.packages.me.MeService;
+import cloud.loify.packages.playlist.dto.AddTracksToPlaylistRequestDTO;
 import cloud.loify.packages.playlist.dto.CreatePlaylistRequestDTO;
 import cloud.loify.packages.playlist.dto.CreatePlaylistResponseDTO;
-import cloud.loify.packages.playlist.dto.AddTracksToPlaylistRequestDTO;
 import cloud.loify.packages.playlist.dto.GetPlaylistResponseDTO;
-import cloud.loify.packages.track.dto.SearchTrackResponseDTO;
-import cloud.loify.packages.track.dto.GetTracksFromPlaylistResponseDTO;
-import cloud.loify.packages.me.MeService;
 import cloud.loify.packages.track.TrackService;
+import cloud.loify.packages.track.dto.GetTracksFromPlaylistResponseDTO;
+import cloud.loify.packages.track.dto.SearchTrackResponseDTO;
 import cloud.loify.packages.utils.ImageUtils;
 import cloud.loify.packages.utils.StringUtils;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
@@ -19,20 +18,18 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
-
 import java.io.IOException;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 public class PlaylistService {
 
+    // Logger instance
+    private static final Logger logger = LoggerFactory.getLogger(PlaylistService.class);
     private final WebClient webClient;
     private final TrackService track;
     private final MeService me;
-
-    // Logger instance
-    private static final Logger logger = LoggerFactory.getLogger(PlaylistService.class);
 
     // TODO: should TrackService be injected here? or should the method required (getFirstTrackByTrackName) be made static?
     public PlaylistService(MeService meService, TrackService trackService, WebClient webClient) {

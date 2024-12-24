@@ -5,4 +5,5 @@ import cloud.loify.packages.playlist.dto.PlaylistDetailsDTO;
 
 import java.util.List;
 
-public record GetUserPlaylistsResponseDTO(List<PlaylistDetailsDTO> items) {}
+public record GetUserPlaylistsResponseDTO(List<PlaylistDetailsDTO> items) {
+}

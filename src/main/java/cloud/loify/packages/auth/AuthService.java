@@ -23,6 +23,7 @@ public class AuthService {
 
     /**
      * Handles the login process for the authenticated user.
+     *
      * @param principalName Username of the authenticated OAuth2User.
      */
     public Mono<Void> handleLogin(String principalName) {
@@ -42,6 +43,7 @@ public class AuthService {
 
     /**
      * Retrieves the user profile from the API.
+     *
      * @return Mono containing the GetUserResponseDTO.
      */
     public Mono<GetUserResponseDTO> getUserProfile() {

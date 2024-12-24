@@ -10,9 +10,8 @@ import reactor.core.publisher.Mono;
 @Service
 public class TrackService {
 
-    private final WebClient webClient;
-
     private static final Logger logger = LoggerFactory.getLogger(TrackService.class);
+    private final WebClient webClient;
 
     public TrackService(WebClient webClient) {
         this.webClient = webClient;

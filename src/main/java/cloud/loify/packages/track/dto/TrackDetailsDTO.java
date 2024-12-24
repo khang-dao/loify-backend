@@ -7,4 +7,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
-public record TrackDetailsDTO(String id, String name, @JsonProperty("preview_url") String url, AlbumDetailsDTO album, List<ArtistDetailsDTO> artists) {}
+public record TrackDetailsDTO(String id, String name, @JsonProperty("preview_url") String url, AlbumDetailsDTO album,
+                              List<ArtistDetailsDTO> artists) {
+}

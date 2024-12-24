@@ -1,10 +1,10 @@
 package cloud.loify.packages.me;
 
-import cloud.loify.packages.playlist.dto.CreatePlaylistRequestDTO;
-import cloud.loify.packages.playlist.dto.CreatePlaylistResponseDTO;
 import cloud.loify.packages.me.dto.GetUserPlaylistsResponseDTO;
 import cloud.loify.packages.me.exceptions.InvalidRequestException;
 import cloud.loify.packages.me.exceptions.PlaylistCreationException;
+import cloud.loify.packages.playlist.dto.CreatePlaylistRequestDTO;
+import cloud.loify.packages.playlist.dto.CreatePlaylistResponseDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -53,7 +53,7 @@ public class MeController {
      *
      * @param requestBody The details of the playlist to be created.
      * @return a Mono containing the response with the created playlist details.
-     * @throws InvalidRequestException if the request body is invalid.
+     * @throws InvalidRequestException   if the request body is invalid.
      * @throws PlaylistCreationException if an error occurs during playlist creation.
      */
     @PostMapping("/playlists")

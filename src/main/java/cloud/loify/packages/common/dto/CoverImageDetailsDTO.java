@@ -1,3 +1,4 @@
 package cloud.loify.packages.common.dto;
 
-public record CoverImageDetailsDTO(String url) {}
+public record CoverImageDetailsDTO(String url) {
+}
