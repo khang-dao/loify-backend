@@ -1,7 +1,6 @@
 package cloud.loify.packages.track;
 
 import cloud.loify.packages.track.dto.SearchTrackResponseDTO;
-import cloud.loify.packages.auth.AuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

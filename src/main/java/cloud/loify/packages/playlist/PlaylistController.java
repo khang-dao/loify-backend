@@ -124,7 +124,7 @@ public class PlaylistController {
                 });
     }
 
-    // NOTE: This method is a combo of: [`createPlaylist()`, `addTracksToPlaylist()`]
+    // NOTE: This method is a combination of: [`createPlaylist()`, `addTracksToPlaylist()`]
     /**
      * Creates a loifyed playlist and adds the loifyed tracks.
      *

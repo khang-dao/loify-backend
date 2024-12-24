@@ -32,16 +32,16 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(ServerHttpSecurity.CsrfSpec::disable) // Disable CSRF for simplicity, adjust as needed for your app
                 .authorizeExchange(auth -> auth
-                        .pathMatchers(org.springframework.http.HttpMethod.OPTIONS, "/v1/playlists/{playlistId}/loify").permitAll() // Allow preflight OPTIONS requests
-                        .pathMatchers(org.springframework.http.HttpMethod.POST, "/v1/playlists/{playlistId}/loify").permitAll() // Allow POST requests
+//                        .pathMatchers(org.springframework.http.HttpMethod.OPTIONS, "/v1/playlists/{playlistId}/loify").permitAll() // Allow preflight OPTIONS requests
+//                        .pathMatchers(org.springframework.http.HttpMethod.POST, "/v1/playlists/{playlistId}/loify").permitAll() // Allow POST requests
 
-                        // TODO: Keep these (remove todo)
-                        .pathMatchers("/v1/home").permitAll()
-                        .pathMatchers("/v1/auth/session/check").permitAll()
-
-                        // TODO: Delete these
-                        .pathMatchers("/v1/playlists/{playlistId}/tracks").permitAll()
-                        .pathMatchers("/v1/me/playlists/loify").permitAll() // For delete loify playlists
+//                        // TODO: Keep these (remove todo)
+//                        .pathMatchers("/v1/home").permitAll()
+//                        .pathMatchers("/v1/auth/session/check").permitAll()
+//
+//                        // TODO: Delete these
+//                        .pathMatchers("/v1/playlists/{playlistId}/tracks").permitAll()
+//                        .pathMatchers("/v1/me/playlists/loify").permitAll() // For delete loify playlists
                         .anyExchange().authenticated() // Require authentication for all other requests
                 )
                 .oauth2Login(withDefaults())
@@ -55,9 +55,9 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(frontendUrl)); // Frontend origin
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")); // Allowed methods
-        configuration.setAllowedHeaders(List.of("*")); // Allow all headers
+        configuration.setAllowedOrigins(List.of(frontendUrl));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true); // Allow credentials like cookies
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

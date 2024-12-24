@@ -1,7 +1,6 @@
 package cloud.loify.packages.common.exception;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.server.ResponseStatusException;
@@ -12,17 +11,21 @@ import reactor.core.publisher.Mono;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResponseStatusException.class)
-    public Mono<ResponseEntity<String>> handleResponseStatusException(ResponseStatusException ex, ServerWebExchange exchange) {
-        // Convert HttpStatusCode to HttpStatus
+    public Mono<Void> handleResponseStatusException(ResponseStatusException ex, ServerWebExchange exchange) {
         HttpStatus status = HttpStatus.valueOf(ex.getStatusCode().value());
 
-        if (status == HttpStatus.NOT_FOUND) {
-            // Handle 404 Not Found
-            String errorMessage = "Sorry, the page you are looking for does not exist.";
-            return Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorMessage));
+        if (exchange.getRequest().getURI().getPath().equals("/error/404.html")) {
+            return Mono.empty();
         }
 
-        // Handle other status codes with a generic error message
-        return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred."));
+        if (status == HttpStatus.NOT_FOUND) {
+            exchange.getResponse().setStatusCode(HttpStatus.MOVED_PERMANENTLY);  // Permanent redirect (301)
+            exchange.getResponse().getHeaders().setLocation(exchange.getRequest().getURI().resolve("/error/404.html"));
+
+            return exchange.getResponse().setComplete();  // Complete the response with the redirect
+        }
+
+        // For other status codes, you can return a generic response or do nothing
+        return Mono.empty();
     }
 }

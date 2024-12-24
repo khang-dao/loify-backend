@@ -23,7 +23,7 @@ public class AuthService {
 
     /**
      * Handles the login process for the authenticated user.
-     * @param principal the authenticated OAuth2User.
+     * @param principalName Username of the authenticated OAuth2User.
      */
     public Mono<Void> handleLogin(String principalName) {
         return authorizedClientService.loadAuthorizedClient("spotify", principalName)
@@ -39,16 +39,6 @@ public class AuthService {
                             );
                 });
     }
-
-    /**
-     * Resets the WebClient to a non-authenticated version.
-     */
-//    public Mono<Void> resetWebClient() {
-//        return Mono.fromRunnable(() -> {
-//            this.webClient = null;
-//            logger.info("WebClient has been reset to non-authenticated version.");
-//        });
-//    }
 
     /**
      * Retrieves the user profile from the API.

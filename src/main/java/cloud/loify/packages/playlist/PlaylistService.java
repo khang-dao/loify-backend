@@ -111,7 +111,7 @@ public class PlaylistService {
                     // Create the request body for the new playlist
                     CreatePlaylistRequestDTO createPlaylistReqBody = new CreatePlaylistRequestDTO(loifyPlaylistName, loifyPlaylistDescription, true, true);
 
-                    // Create the new playlist
+                    // STEP 1: Create the new playlist
                     return this.me.createPlaylistForCurrentUser(createPlaylistReqBody)
                             .flatMap(response -> {
                                 String loifyPlaylistId = response.id();
