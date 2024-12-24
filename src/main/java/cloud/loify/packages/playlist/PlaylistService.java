@@ -117,7 +117,7 @@ public class PlaylistService {
                                 String loifyPlaylistId = response.id();
 
                                 // STEP 2: Update the playlist image
-                                String currentPlaylistImage = currentPlaylist.images().isEmpty() ? null : currentPlaylist.images().get(0).url();
+                                String currentPlaylistImage = currentPlaylist.image().url();
                                 String loifyPlaylistImage = null;
                                 try {
                                     loifyPlaylistImage = ImageUtils.loifyPlaylistImage(currentPlaylistImage);

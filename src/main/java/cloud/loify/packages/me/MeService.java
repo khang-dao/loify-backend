@@ -35,7 +35,10 @@ public class MeService {
                 .uri("/me/playlists")
                 .retrieve()
                 .bodyToMono(GetUserPlaylistsResponseDTO.class)
-                .doOnSuccess(playlists -> logger.info("Successfully retrieved playlists for the current user."))
+                .doOnSuccess(playlists -> {
+                    logger.info("Successfully retrieved playlists for the current user.");
+                    logger.info(String.valueOf(playlists));
+                })
                 .doOnError(err -> logger.error("Error retrieving playlists: {}", err.getMessage()));
     }
 
