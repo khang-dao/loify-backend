@@ -103,10 +103,10 @@ public class PlaylistController {
     }
 
     /**
-     * Retrieves and "loifies" all tracks in a specific playlist.
+     * Retrieves and "loifys" all tracks in a specific playlist.
      *
      * @param playlistId the ID of the playlist.
-     * @return a Flux containing TrackSearchResponseDTOs for all loified tracks.
+     * @return a Flux containing TrackSearchResponseDTOs for all loifyed tracks.
      * @throws ResponseStatusException if the playlist is not found.
      */
     @GetMapping("/{playlistId}/loify")
@@ -114,9 +114,9 @@ public class PlaylistController {
         logger.info("Request to loify all tracks in playlist with ID: {}", playlistId);
         return playlistService.getAndLoifyAllTracksInPlaylist(playlistId, genre)
                 .collectList()
-                .map(loifiedTracks -> {
-                    logger.info("Successfully loified tracks for playlist: {}", playlistId);
-                    return ResponseEntity.ok(Flux.fromIterable(loifiedTracks));
+                .map(loifyedTracks -> {
+                    logger.info("Successfully loifyed tracks for playlist: {}", playlistId);
+                    return ResponseEntity.ok(Flux.fromIterable(loifyedTracks));
                 })
                 .onErrorResume(error -> {
                     logger.error("Error loifying tracks for playlist {}: {}", playlistId, error.getMessage());
@@ -126,7 +126,7 @@ public class PlaylistController {
 
     // NOTE: This method is a combo of: [`createPlaylist()`, `addTracksToPlaylist()`]
     /**
-     * Creates a loified playlist and adds the loified tracks.
+     * Creates a loifyed playlist and adds the loifyed tracks.
      *
      * @param playlistId the ID of the playlist.
      * @return a CreatePlaylistResponseDTO with the created playlist details.

@@ -88,7 +88,7 @@ public class PlaylistService {
                             .map(t -> StringUtils.customizeTrackName(t.track().name(), genre))
                             .flatMap(this.track::getFirstTrackByTrackName);
                 })
-                .doOnComplete(() -> logger.info("Successfully loified all tracks in playlist ID: {}", playlistId))
+                .doOnComplete(() -> logger.info("Successfully loifyed all tracks in playlist ID: {}", playlistId))
                 .doOnError(err -> {
                     logger.error("Error loifying tracks in playlist ID {}: {}", playlistId, err.getMessage());
                     throw new RuntimeException(err);
@@ -100,7 +100,7 @@ public class PlaylistService {
     // TODO: ^ (might involve deleting the playlist if the transaction fails)
     public Mono<CreatePlaylistResponseDTO> createLoifyedPlaylistAndAddLoifyedTracks(String playlistId, String genre) {
         // STEP 0: Get current playlist details
-        logger.info("Creating loified playlist and adding loified tracks for playlist ID: {}", playlistId);
+        logger.info("Creating loifyed playlist and adding loifyed tracks for playlist ID: {}", playlistId);
 
         return this.getPlaylistById(playlistId)  // Get the current playlist details reactively
                 .flatMap(currentPlaylist -> {
@@ -127,8 +127,8 @@ public class PlaylistService {
 
                                 return this.updatePlaylistImage(loifyPlaylistId, loifyPlaylistImage)
 
-                                        .then(this.getAndLoifyAllTracksInPlaylist(playlistId, genre) // STEP 3: Get loified tracks
-                                                .collectList() // Collect all loified tracks into a List
+                                        .then(this.getAndLoifyAllTracksInPlaylist(playlistId, genre) // STEP 3: Get loifyed tracks
+                                                .collectList() // Collect all loifyed tracks into a List
                                                 .flatMap(loifyedTracks -> {
                                                     // STEP 4: Prepare the list of track URIs
                                                     List<String> uris = loifyedTracks.stream()
@@ -155,7 +155,7 @@ public class PlaylistService {
                                                     AddTracksToPlaylistRequestDTO addTracksReqBody = new AddTracksToPlaylistRequestDTO(uris);
                                                     logger.info("Adding loifyed tracks to new playlist ID: {}", loifyPlaylistId);
 
-                                                    // Add loified tracks to the new playlist
+                                                    // Add loifyed tracks to the new playlist
                                                     return this.addTracksToPlaylist(loifyPlaylistId, addTracksReqBody).then(Mono.just(response)); // Return the response after adding tracks
                                                 }));
                             });
