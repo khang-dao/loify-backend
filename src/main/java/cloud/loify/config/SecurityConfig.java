@@ -32,16 +32,6 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(ServerHttpSecurity.CsrfSpec::disable) // Disable CSRF for simplicity, adjust as needed for your app
                 .authorizeExchange(auth -> auth
-//                        .pathMatchers(org.springframework.http.HttpMethod.OPTIONS, "/v1/playlists/{playlistId}/loify").permitAll() // Allow preflight OPTIONS requests
-//                        .pathMatchers(org.springframework.http.HttpMethod.POST, "/v1/playlists/{playlistId}/loify").permitAll() // Allow POST requests
-
-//                        // TODO: Keep these (remove todo)
-//                        .pathMatchers("/v1/home").permitAll()
-//                        .pathMatchers("/v1/auth/session/check").permitAll()
-//
-//                        // TODO: Delete these
-//                        .pathMatchers("/v1/playlists/{playlistId}/tracks").permitAll()
-//                        .pathMatchers("/v1/me/playlists/loify").permitAll() // For delete loify playlists
                         .anyExchange().authenticated() // Require authentication for all other requests
                 )
                 .oauth2Login(withDefaults())
