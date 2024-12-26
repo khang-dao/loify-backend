@@ -37,7 +37,6 @@ public class AuthController {
      * @param principal The authenticated OAuth2 user, provided by Spring Security.
      * @param exchange  The server exchange for handling HTTP requests and responses.
      * @return A {@link Mono<Void>} indicating the outcome of the login attempt.
-     * Returns:
      * - 302 FOUND if the login is successful and the session is created.
      * - 401 UNAUTHORIZED if the principal is null or not authenticated.
      * - 500 INTERNAL_SERVER_ERROR if an unexpected error occurs during processing.
