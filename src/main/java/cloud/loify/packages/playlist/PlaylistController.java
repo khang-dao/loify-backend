@@ -3,9 +3,9 @@ package cloud.loify.packages.playlist;
 import cloud.loify.packages.playlist.dto.AddTracksToPlaylistRequestDTO;
 import cloud.loify.packages.playlist.dto.CreatePlaylistResponseDTO;
 import cloud.loify.packages.playlist.dto.GetPlaylistResponseDTO;
-import cloud.loify.packages.track.dto.SearchTrackResponseDTO;
-import cloud.loify.packages.track.dto.GetTracksFromPlaylistResponseDTO;
 import cloud.loify.packages.playlist.exceptions.PlaylistNotFoundException;
+import cloud.loify.packages.track.dto.GetTracksFromPlaylistResponseDTO;
+import cloud.loify.packages.track.dto.SearchTrackResponseDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -22,8 +22,8 @@ import reactor.core.publisher.Mono;
 @RequestMapping("/v1/playlists")
 public class PlaylistController {
 
-    private final PlaylistService playlistService;
     private static final Logger logger = LoggerFactory.getLogger(PlaylistController.class);
+    private final PlaylistService playlistService;
 
     public PlaylistController(PlaylistService playlistService) {
         this.playlistService = playlistService;
@@ -52,6 +52,7 @@ public class PlaylistController {
     }
 
     // TODO: This MAY be able to be removed - does it return BASICALLY the same content as `getPlaylistById()`
+
     /**
      * Retrieves all tracks in a specific playlist.
      *
@@ -75,10 +76,11 @@ public class PlaylistController {
     }
 
     // TODO: Consider changing to PUT Request - Ask ChatGPT
+
     /**
      * Adds tracks to a specific playlist.
      *
-     * @param playlistId the ID of the playlist.
+     * @param playlistId  the ID of the playlist.
      * @param requestBody the request body containing track details to add.
      * @return a Mono containing the ID of the updated playlist.
      * @throws ResponseStatusException if the playlist is not found or an error occurs.
@@ -103,10 +105,10 @@ public class PlaylistController {
     }
 
     /**
-     * Retrieves and "loifies" all tracks in a specific playlist.
+     * Retrieves and "loifys" all tracks in a specific playlist.
      *
      * @param playlistId the ID of the playlist.
-     * @return a Flux containing TrackSearchResponseDTOs for all loified tracks.
+     * @return a Flux containing TrackSearchResponseDTOs for all loifyed tracks.
      * @throws ResponseStatusException if the playlist is not found.
      */
     @GetMapping("/{playlistId}/loify")
@@ -114,9 +116,9 @@ public class PlaylistController {
         logger.info("Request to loify all tracks in playlist with ID: {}", playlistId);
         return playlistService.getAndLoifyAllTracksInPlaylist(playlistId, genre)
                 .collectList()
-                .map(loifiedTracks -> {
-                    logger.info("Successfully loified tracks for playlist: {}", playlistId);
-                    return ResponseEntity.ok(Flux.fromIterable(loifiedTracks));
+                .map(loifyedTracks -> {
+                    logger.info("Successfully loifyed tracks for playlist: {}", playlistId);
+                    return ResponseEntity.ok(Flux.fromIterable(loifyedTracks));
                 })
                 .onErrorResume(error -> {
                     logger.error("Error loifying tracks for playlist {}: {}", playlistId, error.getMessage());
@@ -124,9 +126,10 @@ public class PlaylistController {
                 });
     }
 
-    // NOTE: This method is a combo of: [`createPlaylist()`, `addTracksToPlaylist()`]
+    // NOTE: This method is a combination of: [`createPlaylist()`, `addTracksToPlaylist()`]
+
     /**
-     * Creates a loified playlist and adds the loified tracks.
+     * Creates a loifyed playlist and adds the loifyed tracks.
      *
      * @param playlistId the ID of the playlist.
      * @return a CreatePlaylistResponseDTO with the created playlist details.

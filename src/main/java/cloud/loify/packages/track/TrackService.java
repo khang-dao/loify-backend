@@ -1,7 +1,6 @@
 package cloud.loify.packages.track;
 
 import cloud.loify.packages.track.dto.SearchTrackResponseDTO;
-import cloud.loify.packages.auth.AuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -11,9 +10,8 @@ import reactor.core.publisher.Mono;
 @Service
 public class TrackService {
 
-    private final WebClient webClient;
-
     private static final Logger logger = LoggerFactory.getLogger(TrackService.class);
+    private final WebClient webClient;
 
     public TrackService(WebClient webClient) {
         this.webClient = webClient;

@@ -6,7 +6,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
@@ -17,8 +20,8 @@ import reactor.core.publisher.Mono;
 @RequestMapping("/v1/tracks")
 public class TrackController {
 
-    private final TrackService trackService;
     private static final Logger logger = LoggerFactory.getLogger(TrackController.class);
+    private final TrackService trackService;
 
     public TrackController(TrackService trackService) {
         this.trackService = trackService;

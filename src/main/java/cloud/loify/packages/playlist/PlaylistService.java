@@ -1,16 +1,15 @@
 package cloud.loify.packages.playlist;
 
+import cloud.loify.packages.me.MeService;
+import cloud.loify.packages.playlist.dto.AddTracksToPlaylistRequestDTO;
 import cloud.loify.packages.playlist.dto.CreatePlaylistRequestDTO;
 import cloud.loify.packages.playlist.dto.CreatePlaylistResponseDTO;
-import cloud.loify.packages.playlist.dto.AddTracksToPlaylistRequestDTO;
 import cloud.loify.packages.playlist.dto.GetPlaylistResponseDTO;
-import cloud.loify.packages.track.dto.SearchTrackResponseDTO;
-import cloud.loify.packages.track.dto.GetTracksFromPlaylistResponseDTO;
-import cloud.loify.packages.me.MeService;
 import cloud.loify.packages.track.TrackService;
+import cloud.loify.packages.track.dto.GetTracksFromPlaylistResponseDTO;
+import cloud.loify.packages.track.dto.SearchTrackResponseDTO;
 import cloud.loify.packages.utils.ImageUtils;
 import cloud.loify.packages.utils.StringUtils;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
@@ -19,20 +18,18 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
-
 import java.io.IOException;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 public class PlaylistService {
 
+    // Logger instance
+    private static final Logger logger = LoggerFactory.getLogger(PlaylistService.class);
     private final WebClient webClient;
     private final TrackService track;
     private final MeService me;
-
-    // Logger instance
-    private static final Logger logger = LoggerFactory.getLogger(PlaylistService.class);
 
     // TODO: should TrackService be injected here? or should the method required (getFirstTrackByTrackName) be made static?
     public PlaylistService(MeService meService, TrackService trackService, WebClient webClient) {
@@ -88,7 +85,7 @@ public class PlaylistService {
                             .map(t -> StringUtils.customizeTrackName(t.track().name(), genre))
                             .flatMap(this.track::getFirstTrackByTrackName);
                 })
-                .doOnComplete(() -> logger.info("Successfully loified all tracks in playlist ID: {}", playlistId))
+                .doOnComplete(() -> logger.info("Successfully loifyed all tracks in playlist ID: {}", playlistId))
                 .doOnError(err -> {
                     logger.error("Error loifying tracks in playlist ID {}: {}", playlistId, err.getMessage());
                     throw new RuntimeException(err);
@@ -100,7 +97,7 @@ public class PlaylistService {
     // TODO: ^ (might involve deleting the playlist if the transaction fails)
     public Mono<CreatePlaylistResponseDTO> createLoifyedPlaylistAndAddLoifyedTracks(String playlistId, String genre) {
         // STEP 0: Get current playlist details
-        logger.info("Creating loified playlist and adding loified tracks for playlist ID: {}", playlistId);
+        logger.info("Creating loifyed playlist and adding loifyed tracks for playlist ID: {}", playlistId);
 
         return this.getPlaylistById(playlistId)  // Get the current playlist details reactively
                 .flatMap(currentPlaylist -> {
@@ -111,13 +108,13 @@ public class PlaylistService {
                     // Create the request body for the new playlist
                     CreatePlaylistRequestDTO createPlaylistReqBody = new CreatePlaylistRequestDTO(loifyPlaylistName, loifyPlaylistDescription, true, true);
 
-                    // Create the new playlist
+                    // STEP 1: Create the new playlist
                     return this.me.createPlaylistForCurrentUser(createPlaylistReqBody)
                             .flatMap(response -> {
                                 String loifyPlaylistId = response.id();
 
                                 // STEP 2: Update the playlist image
-                                String currentPlaylistImage = currentPlaylist.images().isEmpty() ? null : currentPlaylist.images().get(0).url();
+                                String currentPlaylistImage = currentPlaylist.image().url();
                                 String loifyPlaylistImage = null;
                                 try {
                                     loifyPlaylistImage = ImageUtils.loifyPlaylistImage(currentPlaylistImage);
@@ -127,8 +124,8 @@ public class PlaylistService {
 
                                 return this.updatePlaylistImage(loifyPlaylistId, loifyPlaylistImage)
 
-                                        .then(this.getAndLoifyAllTracksInPlaylist(playlistId, genre) // STEP 3: Get loified tracks
-                                                .collectList() // Collect all loified tracks into a List
+                                        .then(this.getAndLoifyAllTracksInPlaylist(playlistId, genre) // STEP 3: Get loifyed tracks
+                                                .collectList() // Collect all loifyed tracks into a List
                                                 .flatMap(loifyedTracks -> {
                                                     // STEP 4: Prepare the list of track URIs
                                                     List<String> uris = loifyedTracks.stream()
@@ -155,7 +152,7 @@ public class PlaylistService {
                                                     AddTracksToPlaylistRequestDTO addTracksReqBody = new AddTracksToPlaylistRequestDTO(uris);
                                                     logger.info("Adding loifyed tracks to new playlist ID: {}", loifyPlaylistId);
 
-                                                    // Add loified tracks to the new playlist
+                                                    // Add loifyed tracks to the new playlist
                                                     return this.addTracksToPlaylist(loifyPlaylistId, addTracksReqBody).then(Mono.just(response)); // Return the response after adding tracks
                                                 }));
                             });
