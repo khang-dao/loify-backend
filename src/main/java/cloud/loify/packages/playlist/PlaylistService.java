@@ -18,7 +18,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -114,51 +113,84 @@ public class PlaylistService {
                                 String loifyPlaylistId = response.id();
 
                                 // STEP 2: Update the playlist image
-                                String currentPlaylistImage = currentPlaylist.image().url();
-                                String loifyPlaylistImage = null;
-                                try {
-                                    loifyPlaylistImage = ImageUtils.loifyPlaylistImage(currentPlaylistImage);
-                                } catch (IOException e) {
-                                    throw new RuntimeException(e);
-                                }
+                                // NOTE: This has been removed to comply with Spotify brand design guidelines - return this.updatePlaylistImage(loifyPlaylistId, loifyPlaylistImage)
+//                                String currentPlaylistImage = currentPlaylist.image().url();
+//                                String loifyPlaylistImage = null;
+//                                try {
+//                                    loifyPlaylistImage = ImageUtils.loifyPlaylistImage(currentPlaylistImage);
+//                                } catch (IOException e) {
+//                                    throw new RuntimeException(e);
+//                                }
+//
+//                                return this.updatePlaylistImage(loifyPlaylistId, loifyPlaylistImage)
+//
+//                                        .then(this.getAndLoifyAllTracksInPlaylist(playlistId, genre) // STEP 3: Get loifyed tracks
+//                                                .collectList() // Collect all loifyed tracks into a List
+//                                                .flatMap(loifyedTracks -> {
+//                                                    // STEP 4: Prepare the list of track URIs
+//                                                    List<String> uris = loifyedTracks.stream()
+//                                                            .map(t -> {
+//                                                                try {
+//                                                                    return t.tracks().items().get(0);
+//                                                                } catch (Exception e) {
+//                                                                    logger.warn("No track found - skipping item...");
+//                                                                    return null;
+//                                                                }
+//                                                            })
+//                                                            .map(t -> {
+//                                                                try {
+//                                                                    return "spotify:track:" + t.id(); // Construct URI
+//                                                                } catch (Exception e) {
+//                                                                    logger.warn("No track found - skipping item again...");
+//                                                                    return null;
+//                                                                }
+//                                                            })
+//                                                            .filter(t -> t != null)
+//                                                            .collect(Collectors.toList());
+//
+//                                                    // Prepare the request body for adding tracks
+//                                                    AddTracksToPlaylistRequestDTO addTracksReqBody = new AddTracksToPlaylistRequestDTO(uris);
+//                                                    logger.info("Adding loifyed tracks to new playlist ID: {}", loifyPlaylistId);
+//
+//                                                    // Add loifyed tracks to the new playlist
+//                                                    return this.addTracksToPlaylist(loifyPlaylistId, addTracksReqBody).then(Mono.just(response)); // Return the response after adding tracks
+//                                                }))
+                                return this.getAndLoifyAllTracksInPlaylist(playlistId, genre) // STEP 3: Get loifyed tracks
+                                        .collectList() // Collect all loifyed tracks into a List
+                                        .flatMap(loifyedTracks -> {
+                                            // STEP 4: Prepare the list of track URIs
+                                            List<String> uris = loifyedTracks.stream()
+                                                    .map(t -> {
+                                                        try {
+                                                            return t.tracks().items().get(0);
+                                                        } catch (Exception e) {
+                                                            logger.warn("No track found - skipping item...");
+                                                            return null;
+                                                        }
+                                                    })
+                                                    .map(t -> {
+                                                        try {
+                                                            return "spotify:track:" + t.id(); // Construct URI
+                                                        } catch (Exception e) {
+                                                            logger.warn("No track found - skipping item again...");
+                                                            return null;
+                                                        }
+                                                    })
+                                                    .filter(t -> t != null)
+                                                    .collect(Collectors.toList());
 
-                                return this.updatePlaylistImage(loifyPlaylistId, loifyPlaylistImage)
+                                            // Prepare the request body for adding tracks
+                                            AddTracksToPlaylistRequestDTO addTracksReqBody = new AddTracksToPlaylistRequestDTO(uris);
+                                            logger.info("Adding loifyed tracks to new playlist ID: {}", loifyPlaylistId);
 
-                                        .then(this.getAndLoifyAllTracksInPlaylist(playlistId, genre) // STEP 3: Get loifyed tracks
-                                                .collectList() // Collect all loifyed tracks into a List
-                                                .flatMap(loifyedTracks -> {
-                                                    // STEP 4: Prepare the list of track URIs
-                                                    List<String> uris = loifyedTracks.stream()
-                                                            .map(t -> {
-                                                                try {
-                                                                    return t.tracks().items().get(0);
-                                                                } catch (Exception e) {
-                                                                    logger.warn("No track found - skipping item...");
-                                                                    return null;
-                                                                }
-                                                            })
-                                                            .map(t -> {
-                                                                try {
-                                                                    return "spotify:track:" + t.id(); // Construct URI
-                                                                } catch (Exception e) {
-                                                                    logger.warn("No track found - skipping item again...");
-                                                                    return null;
-                                                                }
-                                                            })
-                                                            .filter(t -> t != null)
-                                                            .collect(Collectors.toList());
-
-                                                    // Prepare the request body for adding tracks
-                                                    AddTracksToPlaylistRequestDTO addTracksReqBody = new AddTracksToPlaylistRequestDTO(uris);
-                                                    logger.info("Adding loifyed tracks to new playlist ID: {}", loifyPlaylistId);
-
-                                                    // Add loifyed tracks to the new playlist
-                                                    return this.addTracksToPlaylist(loifyPlaylistId, addTracksReqBody).then(Mono.just(response)); // Return the response after adding tracks
-                                                }));
+                                            // Add loifyed tracks to the new playlist
+                                            return this.addTracksToPlaylist(loifyPlaylistId, addTracksReqBody).then(Mono.just(response)); // Return the response after adding tracks
+                                        });
                             });
                 });
     }
 
+    @Deprecated
     private Mono<String> updatePlaylistImage(String playlistId, String base64Image) {
         logger.info("Updating playlist image for playlist ID: {}", playlistId);
 

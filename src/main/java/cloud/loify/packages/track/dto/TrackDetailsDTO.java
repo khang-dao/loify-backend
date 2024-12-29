@@ -3,10 +3,11 @@ package cloud.loify.packages.track.dto;
 
 import cloud.loify.packages.common.dto.AlbumDetailsDTO;
 import cloud.loify.packages.common.dto.ArtistDetailsDTO;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import java.util.List;
 
-public record TrackDetailsDTO(String id, String name, @JsonProperty("preview_url") String url, AlbumDetailsDTO album,
-                              List<ArtistDetailsDTO> artists) {
+@JsonDeserialize(using = TrackDetailsDTODeserializer.class)
+public record TrackDetailsDTO(String id, String name, AlbumDetailsDTO album,
+                              List<ArtistDetailsDTO> artists, Boolean explicit,  String url) {
 }
