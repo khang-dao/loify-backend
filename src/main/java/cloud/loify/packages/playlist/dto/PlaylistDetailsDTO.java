@@ -5,5 +5,5 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 
 @JsonDeserialize(using = PlaylistDetailsDTODeserializer.class)
-public record PlaylistDetailsDTO(String id, String description, String name, CoverImageDetailsDTO image) {
+public record PlaylistDetailsDTO(String id, String description, String name, CoverImageDetailsDTO image, String url) {
 }

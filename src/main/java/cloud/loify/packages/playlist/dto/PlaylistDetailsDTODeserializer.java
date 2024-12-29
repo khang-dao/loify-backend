@@ -29,6 +29,7 @@ public class PlaylistDetailsDTODeserializer extends JsonDeserializer<PlaylistDet
         // Extract the first image
         CoverImageDetailsDTO firstImage = (images != null && !images.isEmpty()) ? images.get(0) : null;
 
-        return new PlaylistDetailsDTO(id, description, name, firstImage);
+        String url = node.get("external_urls").get("spotify").asText();
+        return new PlaylistDetailsDTO(id, description, name, firstImage, url);
     }
 }
